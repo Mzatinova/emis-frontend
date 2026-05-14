@@ -35,7 +35,7 @@ const StudentResults: React.FC<StudentResultsProps> = ({ downloadPDF }) => {
                 </Select>
                 <Select value={filters.sessionId} onChange={e => setFilters({ ...filters, sessionId: e.target.value })}>
                     <option value="">All sessions</option>
-                    {sessions.map(s => <option key={s.id} value={s.id}>{s.year} {s.semester}</option>)}
+                   {sessions.map(s => <option key={s.id} value={s.id}>{s.year}</option>)}
                 </Select>
             </div>
 
@@ -49,7 +49,7 @@ const StudentResults: React.FC<StudentResultsProps> = ({ downloadPDF }) => {
                                 <div className="font-medium text-xs">{cou?.code}</div>
                                 <div className="text-xs text-slate-500">{cou?.name}</div>
                             </td>
-                            <td className="px-4 py-3 text-xs">{sess?.year} {sess?.semester}</td>
+                         
                             <td className="px-4 py-3 text-center font-medium">{r.exam ?? '—'}</td>
                             <td className="px-4 py-3 text-center">
                                 <span className={`font-bold ${r.grade === 'F' ? 'text-red-600' : 'text-emerald-600'}`}>
