@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useEMIS } from '@/contexts/EMISContext';
 import { PageHeader, Badge, Table, Input, Toast } from '@/components/shared/UI';
 import { BookOpen, Users, Search, GraduationCap } from 'lucide-react';
+import { useRegistration } from '@/contexts/RegistrationContext';
 
 interface InstructorClassesProps {
     toast: string;
@@ -13,6 +14,7 @@ const InstructorClasses: React.FC<InstructorClassesProps> = ({ toast, setToast, 
     const { students } = useEMIS();
     const [selectedClass, setSelectedClass] = useState<any>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const { registrations } = useRegistration();
 
     // Group assigned courses into boxes
     const assignedBoxes = useMemo(() => {
@@ -26,15 +28,46 @@ const InstructorClasses: React.FC<InstructorClassesProps> = ({ toast, setToast, 
     }, [myAssignedCourses]);
 
     // Get students for selected class
-    const studentsInClass = useMemo(() => {
-        if (!selectedClass) return [];
 
-        return students.filter(s =>
-            s.active &&
-            s.program === selectedClass.programName &&
-            s.level === `Year ${selectedClass.level}`
+    const studentsInClass = useMemo(() => {
+    if (!selectedClass) return [];
+
+    return students.filter(s => {
+        const hasApprovedRegistration = registrations.some(r => 
+            String(r.studentId) === String(s.id) &&
+            r.registrationStatus === 'approved' &&
+            String(r.programName) === String(selectedClass.programName) &&
+            String(r.level) === String(selectedClass.level) &&
+            r.courses?.includes(selectedClass.courseName)
         );
-    }, [selectedClass, students]);
+        return s.active && hasApprovedRegistration;
+    });
+}, [selectedClass, students, registrations]);
+//     const studentsInClass = useMemo(() => {
+//     if (!selectedClass) return [];
+
+//     return students.filter(s => {
+//         const hasApprovedRegistration = registrations.some(r => 
+//             r.studentId === s.id &&
+//             r.registrationStatus === 'approved' &&
+//             r.programName === selectedClass.programName &&
+//             r.level === selectedClass.level &&
+//             r.courses?.includes(selectedClass.courseName)
+//         );
+//         return s.active && hasApprovedRegistration;
+//     });
+// }, [selectedClass, students, registrations]);
+
+
+    // const studentsInClass = useMemo(() => {
+    //     if (!selectedClass) return [];
+
+    //     return students.filter(s =>
+    //         s.active &&
+    //         s.program === selectedClass.programName &&
+    //         s.level === `Year ${selectedClass.level}`
+    //     );
+    // }, [selectedClass, students]);
 
     const filteredStudents = studentsInClass.filter(s =>
         !searchTerm ||
@@ -78,17 +111,29 @@ const InstructorClasses: React.FC<InstructorClassesProps> = ({ toast, setToast, 
                         <p className="text-slate-500">No students enrolled in this class</p>
                     </div>
                 ) : (
-                    <Table headers={['Reg Number', 'Name', 'Program', 'Level', 'Status']} rowCount={filteredStudents.length}>
-                        {filteredStudents.map(s => (
-                            <tr key={s.id} className="hover:bg-slate-50">
-                                <td className="px-4 py-3 font-mono text-xs text-blue-700">{s.regNumber}</td>
-                                <td className="px-4 py-3 font-medium">{s.name}</td>
-                                <td className="px-4 py-3 text-slate-600">{s.program || '—'}</td>
-                                <td className="px-4 py-3 text-slate-600">{s.level || '—'}</td>
-                                <td className="px-4 py-3"><Badge status={s.active ? 'active' : 'inactive'} /></td>
-                            </tr>
-                        ))}
-                    </Table>
+                    <Table headers={['Reg Number', 'Name', 'Program', 'Level', 'Course', 'Status']} rowCount={filteredStudents.length}>
+    {filteredStudents.map(s => (
+        <tr key={s.id} className="hover:bg-slate-50">
+            <td className="px-4 py-3 font-mono text-xs text-blue-700">{s.regNumber}</td>
+            <td className="px-4 py-3 font-medium">{s.name}</td>
+            <td className="px-4 py-3 text-slate-600">{s.program || '—'}</td>
+            <td className="px-4 py-3 text-slate-600">{s.level || '—'}</td>
+            <td className="px-4 py-3 text-slate-600">{selectedClass?.courseName || '—'}</td>
+            <td className="px-4 py-3"><Badge status={s.active ? 'active' : 'inactive'} /></td>
+        </tr>
+    ))}
+</Table>
+                    // <Table headers={['Reg Number', 'Name', 'Program', 'Level', 'Status']} rowCount={filteredStudents.length}>
+                    //     {filteredStudents.map(s => (
+                    //         <tr key={s.id} className="hover:bg-slate-50">
+                    //             <td className="px-4 py-3 font-mono text-xs text-blue-700">{s.regNumber}</td>
+                    //             <td className="px-4 py-3 font-medium">{s.name}</td>
+                    //             <td className="px-4 py-3 text-slate-600">{s.program || '—'}</td>
+                    //             <td className="px-4 py-3 text-slate-600">{s.level || '—'}</td>
+                    //             <td className="px-4 py-3"><Badge status={s.active ? 'active' : 'inactive'} /></td>
+                    //         </tr>
+                    //     ))}
+                    // </Table>
                 )}
             </div>
         );

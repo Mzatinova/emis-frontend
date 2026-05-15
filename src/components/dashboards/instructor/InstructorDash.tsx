@@ -1,63 +1,138 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useEMIS } from '@/contexts/EMISContext';
 import { StatCard, Badge, PageHeader, Modal, Field, Input, Select, Button, Table, Toast } from '@/components/shared/UI';
 import { BookOpen, Users, FileText, Search, Upload, Edit2, GraduationCap, Plus } from 'lucide-react';
 import InstructorStudents from './InstructorStudents';
 import InstructorResults from './InstructorResults';
 import InstructorClasses from './InstructorClasses';
+import { useRegistration } from '@/contexts/RegistrationContext';
 
 const InstructorDash: React.FC<{ active: string }> = ({ active }) => {
-  const { currentUser, students, courses, results, sessions, addResult, updateResult } = useEMIS();
+ const { currentUser, students, courses, results, sessions, addResult, updateResult, apiRequest } = useEMIS();
+ const { registrations } = useRegistration();
+ 
   const [toast, setToast] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<string>('');
+    const [myAssignedCourses, setMyAssignedCourses] = useState<{ programName: string; level: number; courseName: string }[]>([]);
 
-  // Load programs from localStorage to get course assignments
-  const [programs] = useState(() => {
-    const saved = localStorage.getItem('emis_programs');
-    if (saved) return JSON.parse(saved);
-    return [];
-  });
-
-  // Get courses assigned to this instructor from programs
-  const myAssignedCourses = useMemo(() => {
-    const assigned: { programName: string; level: number; courseName: string }[] = [];
-    programs.forEach((program: any) => {
-      program.courses.forEach((course: any) => {
-        if (course.instructorId === currentUser?.id) {
-          assigned.push({
-            programName: program.name,
-            level: course.level,
-            courseName: course.courseName,
-          });
+ 
+useEffect(() => {
+    const fetchAssignedCourses = async () => {
+      try {
+        const response = await apiRequest('/instructor/courses');
+        if (response.data) {
+          setMyAssignedCourses(response.data);
         }
-      });
-    });
-    return assigned;
-  }, [programs, currentUser]);
+      } catch (error) {
+        console.error('Failed to fetch assigned courses:', error);
+      }
+    };
+    fetchAssignedCourses();
+  }, []); 
+ 
 
   // Get students filtered by instructor's assigned courses
-  const getStudentsByCourse = () => {
-    // Students are assigned to programs and levels
-    // Need to match: student.program matches programName, student.level matches level
-    const studentMap: { [key: string]: any[] } = {};
+//   const getStudentsByCourse = () => {
+    
+//   const studentMap: { [key: string]: any[] } = {};
+  
 
-    myAssignedCourses.forEach(assigned => {
-      const key = `${assigned.programName} - Level ${assigned.level} - ${assigned.courseName}`;
-      const matchedStudents = students.filter(s =>
-        s.active &&
-        s.program === assigned.programName &&
-        s.level === `Year ${assigned.level}`
+//   myAssignedCourses.forEach(assigned => {
+//     const key = `${assigned.programName} - Level ${assigned.level} - ${assigned.courseName}`;
+    
+//     // Get students who have APPROVED registration for this specific course
+//     const matchedStudents = students.filter(s => {
+//       // Check if student has approved registration for this program, level, and course
+//       const hasApprovedRegistration = registrations.some(r => 
+//       String(r.studentId) === String(s.id) &&
+//       r.registrationStatus === 'approved' &&
+//       String(r.programName) === String(assigned.programName) &&
+//       String(r.level) === String(assigned.level) &&
+//       r.courses?.includes(assigned.courseName)
+//       );
+
+//       // const hasApprovedRegistration = registrations.some(r => 
+//       //   r.studentId === s.id &&
+//       //   r.registrationStatus === 'approved' &&
+//       //   r.programName === assigned.programName &&
+//       //   r.level === assigned.level &&
+//       //   r.courses?.includes(assigned.courseName)
+//       // );
+//       return s.active && hasApprovedRegistration;
+//     });
+
+
+//     console.log('Key:', key);
+// console.log('Matched students count:', matchedStudents.length);
+// console.log('Students in filter:', students.map(s => ({ id: s.id, name: s.name, active: s.active })));
+// console.log('Registrations:', registrations.map(r => ({ studentId: r.studentId, programName: r.programName, level: r.level, courses: r.courses })));
+//     if (matchedStudents.length > 0) {
+//       studentMap[key] = matchedStudents;
+//     }
+//   });
+
+//   return studentMap;
+// };
+  // const getStudentsByCourse = () => {
+  //   // Students are assigned to programs and levels
+  //   // Need to match: student.program matches programName, student.level matches level
+  //   const studentMap: { [key: string]: any[] } = {};
+
+  //   myAssignedCourses.forEach(assigned => {
+  //     const key = `${assigned.programName} - Level ${assigned.level} - ${assigned.courseName}`;
+  //     const matchedStudents = students.filter(s =>
+  //       s.active &&
+  //       s.program === assigned.programName &&
+  //       s.level === `Year ${assigned.level}`
+  //     );
+  //     if (matchedStudents.length > 0) {
+  //       studentMap[key] = matchedStudents;
+  //     }
+  //   });
+
+  //   return studentMap;
+  // };
+
+  // const studentsByCourse = getStudentsByCourse();
+  const studentsByCourse = useMemo(() => {
+
+    console.log('Registration details:', registrations.map(r => ({
+    studentId: r.studentId,
+    programName: r.programName,
+    level: r.level,
+    courses: r.courses
+  })));
+
+    
+  const studentMap: { [key: string]: any[] } = {};
+
+  myAssignedCourses.forEach(assigned => {
+    const key = `${assigned.programName} - Level ${assigned.level} - ${assigned.courseName}`;
+    
+    const matchedStudents = students.filter(s => {
+      const hasApprovedRegistration = registrations.some(r => 
+        String(r.studentId) === String(s.id) &&
+        r.registrationStatus === 'approved' &&
+        String(r.programName) === String(assigned.programName) &&
+        String(r.level) === String(assigned.level) &&
+        r.courses?.includes(assigned.courseName)
       );
-      if (matchedStudents.length > 0) {
-        studentMap[key] = matchedStudents;
-      }
+      return s.active && hasApprovedRegistration;
     });
 
-    return studentMap;
-  };
+    console.log('Key:', key);
+console.log('Matched students count:', matchedStudents.length);
+    
+    if (matchedStudents.length > 0) {
+      studentMap[key] = matchedStudents;
+    }
+  });
 
-  const studentsByCourse = getStudentsByCourse();
+  return studentMap;
+}, [myAssignedCourses, students, registrations]);
 
+console.log('studentsByCourse:', studentsByCourse);
+  
   // Results Management
   const [resultModal, setResultModal] = useState(false);
   const [editingResult, setEditingResult] = useState<any>(null);
@@ -175,16 +250,16 @@ const myResults = useMemo(() => {
           </div>
           <div className="bg-white border border-slate-200 rounded-xl p-5">
             <h3 className="font-semibold text-slate-900 mb-4">Result Status</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
-                <span className="text-sm font-medium">Pending</span>
-                <span className="font-bold text-amber-700">{myResults.filter(r => r.status === 'pending').length}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
-                <span className="text-sm font-medium">Approved (Locked)</span>
-                <span className="font-bold text-emerald-700">{myResults.filter(r => r.status === 'approved').length}</span>
-              </div>
-            </div>
+           <div className="space-y-3">
+    <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+        <span className="text-sm font-medium">⏳ Pending Approval</span>
+        <span className="font-bold text-amber-700">{myResults.filter(r => r.status === 'pending').length}</span>
+    </div>
+    <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
+        <span className="text-sm font-medium">✓ Published</span>
+        <span className="font-bold text-emerald-700">{myResults.filter(r => r.status === 'approved').length}</span>
+    </div>
+</div>
           </div>
         </div>
       </div>

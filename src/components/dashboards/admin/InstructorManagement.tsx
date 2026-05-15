@@ -22,7 +22,7 @@ interface InstructorManagementProps {
 }
 
 const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setToast }) => {
-    const { users, courses } = useEMIS();
+   const { users, courses, apiRequest } = useEMIS();
 
     const [instructorSearch, setInstructorSearch] = useState('');
     const [assignModal, setAssignModal] = useState(false);
@@ -31,12 +31,19 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
     // Load programs from localStorage
     const [programs, setPrograms] = useState<Program[]>([]);
 
-    useEffect(() => {
-        const saved = localStorage.getItem('emis_programs');
-        if (saved) {
-            setPrograms(JSON.parse(saved));
+useEffect(() => {
+    const fetchPrograms = async () => {
+        try {
+            const response = await apiRequest('/programs');
+            if (response.data) {
+                setPrograms(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch programs:', error);
         }
-    }, []);
+    };
+    fetchPrograms();
+}, []);
 
     const instructors = users.filter(u => u.role === 'instructor' && u.active);
 
@@ -65,25 +72,38 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
     };
 
     // Save updated programs back to localStorage
-    const savePrograms = (updatedPrograms: Program[]) => {
-        setPrograms(updatedPrograms);
-        localStorage.setItem('emis_programs', JSON.stringify(updatedPrograms));
-    };
+    // const savePrograms = (updatedPrograms: Program[]) => {
+    //     setPrograms(updatedPrograms);
+    //     localStorage.setItem('emis_programs', JSON.stringify(updatedPrograms));
+    // };
 
-    // Remove instructor from all courses
-    const removeInstructorFromAllCourses = (instructorId: string) => {
-        const updatedPrograms = programs.map(program => ({
-            ...program,
-            courses: program.courses.map(course =>
-                course.instructorId === instructorId
-                    ? { ...course, instructorId: null }
-                    : course
-            ),
-        }));
-        savePrograms(updatedPrograms);
+    const removeInstructorFromAllCourses = async (instructorId: string) => {
+    try {
+        await apiRequest('/instructor/assign', 'POST', {
+            instructorId: instructorId,
+            assignments: []
+        });
         setToast(`Removed ${selectedInstructor?.name} from all courses`);
         setAssignModal(false);
-    };
+    } catch (error) {
+        setToast('Failed to remove assignments');
+    }
+};
+
+    // Remove instructor from all courses
+    // const removeInstructorFromAllCourses = (instructorId: string) => {
+    //     const updatedPrograms = programs.map(program => ({
+    //         ...program,
+    //         courses: program.courses.map(course =>
+    //             course.instructorId === instructorId
+    //                 ? { ...course, instructorId: null }
+    //                 : course
+    //         ),
+    //     }));
+    //     savePrograms(updatedPrograms);
+    //     setToast(`Removed ${selectedInstructor?.name} from all courses`);
+    //     setAssignModal(false);
+    // };
 
     // Open assign modal for an instructor
     const openAssignModal = (instructor: User) => {
@@ -117,42 +137,30 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
         setTempAssignments(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-    const saveAssignments = () => {
-        if (!selectedInstructor) return;
+const saveAssignments = async () => {
+    if (!selectedInstructor) return;
 
-        // Start with current programs
-        const updatedPrograms = [...programs];
+    const assignments = [];
+    Object.entries(tempAssignments).forEach(([key, isAssigned]) => {
+        if (isAssigned) {
+            const [programId, levelStr, ...courseNameParts] = key.split('-');
+            const level = parseInt(levelStr);
+            const courseName = courseNameParts.join('-');
+            assignments.push({ programId, level, courseName });
+        }
+    });
 
-        // First, remove current instructor from all courses
-        updatedPrograms.forEach(program => {
-            program.courses.forEach(course => {
-                if (course.instructorId === selectedInstructor.id) {
-                    course.instructorId = null;
-                }
-            });
+    try {
+        await apiRequest('/instructor/assign', 'POST', {
+            instructorId: selectedInstructor.id,
+            assignments
         });
-
-        // Then add back based on tempAssignments
-        Object.entries(tempAssignments).forEach(([key, isAssigned]) => {
-            if (isAssigned) {
-                const [programId, levelStr, ...courseNameParts] = key.split('-');
-                const level = parseInt(levelStr);
-                const courseName = courseNameParts.join('-');
-
-                const program = updatedPrograms.find(p => p.id === programId);
-                if (program) {
-                    const course = program.courses.find(c => c.level === level && c.courseName === courseName);
-                    if (course) {
-                        course.instructorId = selectedInstructor.id;
-                    }
-                }
-            }
-        });
-
-        savePrograms(updatedPrograms);
-        setAssignModal(false);
         setToast(`Assignments saved for ${selectedInstructor.name}`);
-    };
+        setAssignModal(false);
+    } catch (error) {
+        setToast('Failed to save assignments');
+    }
+};
 
     return (
         <div>

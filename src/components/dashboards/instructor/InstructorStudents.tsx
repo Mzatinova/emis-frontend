@@ -25,7 +25,6 @@ const InstructorStudents: React.FC<InstructorStudentsProps> = ({
     const displayStudents = selectedCourse
         ? studentsByCourse[selectedCourse] || []
         : Object.values(studentsByCourse).flat();
-
     return (
         <div>
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
@@ -46,9 +45,16 @@ const InstructorStudents: React.FC<InstructorStudentsProps> = ({
                         />
                     </div>
                     <Select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)}>
+    <option value="">All Courses</option>
+    {myAssignedCourses.map(c => {
+        const optionValue = `${c.programName} - Level ${c.level} - ${c.courseName}`;
+        return <option key={optionValue} value={optionValue}>{c.courseName} (Level {c.level})</option>;
+    })}
+</Select>
+                    {/* <Select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)}>
                         <option value="">All Courses</option>
                         {courseOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                    </Select>
+                    </Select> */}
                 </div>
             </div>
 
@@ -72,15 +78,14 @@ const InstructorStudents: React.FC<InstructorStudentsProps> = ({
                                 <td className="px-4 py-3 font-medium">{s.name}</td>
                                 <td className="px-4 py-3 text-slate-600">{s.program || '—'}</td>
                                 <td className="px-4 py-3 text-slate-600">{s.level || '—'}</td>
-                                <td className="px-4 py-3">
-                                    {selectedCourse || (
-                                        <div className="flex flex-wrap gap-1">
-                                            {myAssignedCourses
-                                                .filter(c => s.program === c.programName && s.level === `Year ${c.level}`)
-                                                .map((c, idx) => <Badge key={idx} status="active">{c.courseName}</Badge>)}
-                                        </div>
-                                    )}
-                                </td>
+                              <td className="px-4 py-3">
+    <div className="flex flex-wrap gap-1">
+
+        {myAssignedCourses
+            .filter(c => s.program === c.programName && s.level === `Level ${c.level}`)
+            .map((c, idx) => <Badge key={idx} status="active">{c.courseName} (Level {c.level})</Badge>)}
+    </div>
+</td>
                             </tr>
                         ))}
                 </Table>
