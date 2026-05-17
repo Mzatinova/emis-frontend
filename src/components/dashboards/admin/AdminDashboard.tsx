@@ -19,9 +19,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
     const currentSession = sessions.find(s => s.active === true);
 
     // Registration stats
-    const totalRegisteredStudents = registrations.length;
-    const approvedStudents = registrations.filter(r => r.registrationStatus === 'approved').length;
-    const pendingStudents = registrations.filter(r => r.registrationStatus === 'pending').length;
+  // Registration stats (using invoices to match AccountsApproval)
+const totalRegisteredStudents = invoices.length;
+const approvedStudents = invoices.filter(i => i.status === 'approved').length;
+const pendingStudents = invoices.filter(i => i.status === 'pending' || i.status === 'paid').length;
 
     // Repeaters (students who registered as repeater - check invoice type)
     const repeaters = invoices.filter(i => i.type === 'repeater').length;
@@ -42,6 +43,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
 
             {/* 6 Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-6">
+                
                 <StatCard label="Total Students" value={students.length} icon={GraduationCap} color="bg-blue-600" sub={`${students.filter(s => s.active).length} active`} />
 
                 <StatCard label="Total Instructors" value={instructors.length} icon={Users} color="bg-emerald-600" />
@@ -51,7 +53,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
                 <StatCard label="Approved Students" value={approvedStudents} icon={UserCheck} color="bg-green-600" sub="Registration approved" />
 
                 <StatCard label="Pending Students" value={pendingStudents} icon={Clock} color="bg-amber-600" sub="Awaiting approval" />
-
                 <StatCard
                     label="Current Session"
                     value={currentSession ? currentSession.year : 'None'}
@@ -62,17 +63,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
             </div>
 
             {/* Pending Approval Alert */}
-            {pendingStudents > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                    <div className="flex items-center gap-3">
-                        <Clock className="w-5 h-5 text-amber-600" />
-                        <div>
-                            <p className="font-medium text-amber-800">{pendingStudents} student(s) pending registration approval</p>
-                            <p className="text-sm text-amber-600">Go to Registration Approval to review</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+         {/* {pendingStudents > 0 && (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+        <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-amber-600" />
+            <div>
+                <p className="font-medium text-amber-800">{pendingStudents} student(s) pending registration approval</p>
+                <p className="text-sm text-amber-600">Go to Registration Approval to review</p>
+            </div>
+        </div>
+    </div>
+)} */}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Recently Registered Students */}

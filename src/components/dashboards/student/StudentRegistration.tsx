@@ -82,16 +82,37 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
     }, [currentUser?.id]);
 
     // Get fee for selected level from fee_structures table
-    const getFeeAmount = () => {
-        if (!selectedLevel || !currentStudent?.program) return 0;
-        const fee = feeStructures.find(f => f.program_id === currentStudent.program && f.level === selectedLevel);
-        if (!fee) return 0;
 
-        if (selectedType === 'repeater' && selectedCourses.length > 0) {
-            return selectedCourses.length * fee.per_course_amount;
-        }
-        return fee.full_level_amount;
-    };
+    const getFeeAmount = () => {
+    if (!selectedLevel || !currentStudent?.program) return 0;
+    
+    // Extract number from "Level 1" to get 1, or use selectedLevel directly if it's already a number
+    const studentLevelNumber = typeof selectedLevel === 'number' 
+        ? selectedLevel 
+        : parseInt(String(selectedLevel).match(/\d+/)?.[0] || '0');
+    
+    const fee = feeStructures.find(f => 
+        f.program_id === currentStudent.program && 
+        Number(f.level) === studentLevelNumber
+    );
+    
+    if (!fee) return 0;
+
+    if (selectedType === 'repeater' && selectedCourses.length > 0) {
+        return selectedCourses.length * Number(fee.per_course_amount);
+    }
+    return Number(fee.full_level_amount);
+};
+    // const getFeeAmount = () => {
+    //     if (!selectedLevel || !currentStudent?.program) return 0;
+    //     const fee = feeStructures.find(f => f.program_id === currentStudent.program && f.level === selectedLevel);
+    //     if (!fee) return 0;
+
+    //     if (selectedType === 'repeater' && selectedCourses.length > 0) {
+    //         return selectedCourses.length * fee.per_course_amount;
+    //     }
+    //     return fee.full_level_amount;
+    // };
 
     const handleCourseToggle = (course: string) => {
         if (selectedCourses.includes(course)) {

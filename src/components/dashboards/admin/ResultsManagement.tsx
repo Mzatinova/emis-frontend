@@ -11,7 +11,8 @@ interface ResultsManagementProps {
 
 const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }) => {
     const { currentUser, students, courses, results, updateResult, approveResult } = useEMIS();
-    const { getStudentRegistrations } = useRegistration();
+    // const { getStudentRegistrations } = useRegistration();
+    const { invoices } = useRegistration();
 
     const [filters, setFilters] = useState({ search: '', programName: '', level: '', status: '' });
     const [showBulkModal, setShowBulkModal] = useState(false);
@@ -21,7 +22,9 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
     // Edit Result Modal
     const [editModal, setEditModal] = useState(false);
     const [editingResult, setEditingResult] = useState<any>(null);
-    const [editForm, setEditForm] = useState({ exam: '' });
+    const [editForm, setEditForm] = useState({ marks: '' });
+
+    
 
     // Get unique programs from students
     const programs = useMemo(() => {
@@ -33,17 +36,18 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
     }, [students]);
 
     // Check if student registration is approved
-    const isStudentApproved = (studentId: string): boolean => {
-        const registrations = getStudentRegistrations(studentId);
-        return registrations.some(r => r.registrationStatus === 'approved');
-    };
+ // Check if student registration is approved (using invoices)
+const isStudentApproved = (studentId: string): boolean => {
+    const studentInvoices = invoices.filter(inv => String(inv.studentId) === String(studentId));
+    return studentInvoices.some(inv => inv.status === 'approved');
+};
 
-    // Get registration status text
-    const getRegistrationStatus = (studentId: string): 'Approved' | 'Pending' => {
-        const registrations = getStudentRegistrations(studentId);
-        if (registrations.some(r => r.registrationStatus === 'approved')) return 'Approved';
-        return 'Pending';
-    };
+// Get registration status text (using invoices)
+const getRegistrationStatus = (studentId: string): 'Approved' | 'Pending' => {
+    const studentInvoices = invoices.filter(inv => String(inv.studentId) === String(studentId));
+    if (studentInvoices.some(inv => inv.status === 'approved')) return 'Approved';
+    return 'Pending';
+};
 
     // Single publish
     const handlePublish = (id: string, studentId: string) => {
@@ -62,7 +66,7 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
             return;
         }
         setEditingResult(result);
-        setEditForm({ exam: result.exam?.toString() || '' });
+        setEditForm({ marks: result.marks?.toString() || '' });
         setEditModal(true);
     };
 
@@ -70,8 +74,8 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
         e.preventDefault();
         if (!editingResult) return;
 
-        const exam = editForm.exam === '' ? null : parseFloat(editForm.exam);
-        updateResult(editingResult.id, { exam });
+        const marks = editForm.marks === '' ? null : parseFloat(editForm.marks);
+        updateResult(editingResult.id, { marks });
         setEditModal(false);
         setEditingResult(null);
         setToast('Result updated successfully');
@@ -122,35 +126,96 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
         }
     };
 
-    const filteredResults = useMemo(() => results.filter(r => {
-        const student = students.find(s => s.id === r.studentId);
-        const course = courses.find(c => c.id === r.courseId);
-        const searchTerm = filters.search.toLowerCase();
-        return (
-            (!filters.search ||
-                r.studentReg.toLowerCase().includes(searchTerm) ||
-                (student?.name || '').toLowerCase().includes(searchTerm)) &&
-            (!filters.programName || student?.program === filters.programName) &&
-            (!filters.level || student?.level === filters.level) &&
-            (!filters.status || r.status === filters.status)
-        );
-    }), [results, filters, students, courses]);
+  const filteredResults = useMemo(() => results.filter(r => {
+    const student = students.find(s => String(s.id) === String(r.studentId));
+    const searchTerm = filters.search.toLowerCase().trim();
+    return (
+        (!filters.search ||
+           (student?.regNumber || '').toLowerCase().includes(searchTerm) ||
+            (student?.name || '').toLowerCase().includes(searchTerm)) &&
+        (!filters.programName || (student?.program || '').toLowerCase() === filters.programName.toLowerCase()) &&
+        (!filters.level || (student?.level || '').toLowerCase() === filters.level.toLowerCase())
+    );
+}), [results, filters, students]);
 
-    // const filteredResults = useMemo(() => results.filter(r => {
-    //     const student = students.find(s => s.id === r.studentId);
-    //     const course = courses.find(c => c.id === r.courseId);
-    //     const searchTerm = filters.search.toLowerCase();
-    //     return (
-    //         (!filters.search ||
-    //             r.studentReg.toLowerCase().includes(searchTerm) ||
-    //             (student?.name || '').toLowerCase().includes(searchTerm)) &&
-    //         (!filters.courseId || r.courseId === filters.courseId) &&
-    //         (!filters.programName || student?.program === filters.programName) &&
-    //         (!filters.status || r.status === filters.status)
-    //     );
-    // }), [results, filters, students, courses]);
+   const pendingStudentsCount = useMemo(() => {
+    const studentsWithPendingResults = new Set();
+    filteredResults.forEach(r => {
+        if (r.status === 'pending' && isStudentApproved(r.studentId)) {
+            studentsWithPendingResults.add(r.studentId);
+        }
+    });
+    return studentsWithPendingResults.size;
+}, [filteredResults]);
 
-    const pendingCount = filteredResults.filter(r => r.status === 'pending' && isStudentApproved(r.studentId)).length;
+    // Dynamic publish button label
+const publishButtonLabel = useMemo(() => {
+    const programText = filters.programName || 'All Programs';
+    const levelText = filters.level || 'All Levels';
+    
+    if (!filters.programName && !filters.level) {
+        return 'Publish Results (All Programs & Levels)';
+    } else if (filters.programName && !filters.level) {
+        return `Publish Results (${filters.programName} - All Levels)`;
+    } else if (!filters.programName && filters.level) {
+        return `Publish Results (All Programs - ${filters.level})`;
+    } else {
+        return `Publish Results (${filters.programName} - ${filters.level})`;
+    }
+}, [filters.programName, filters.level]);
+
+    // Group results by student
+const groupedByStudent = useMemo(() => {
+    const groups: { [key: string]: any } = {};
+    
+    filteredResults.forEach(r => {
+        if (!groups[r.studentId]) {
+            const student = students.find(s => String(s.id) === String(r.studentId));
+            groups[r.studentId] = {
+                studentId: r.studentId,
+                studentReg: student?.regNumber || r.studentReg,
+                studentName: student?.name || '',
+                studentProgram: student?.program || '',
+                studentLevel: student?.level || '',
+                regStatus: getRegistrationStatus(r.studentId),
+                practical: null,
+                occupation: null,
+                fundamentals: null,
+                allPassed: true,
+                allPublished: true
+            };
+        }
+        
+        // Assign results to their course columns
+        if (r.courseName === 'Practical') {
+            groups[r.studentId].practical = r;
+        } else if (r.courseName === 'Occupation') {
+            groups[r.studentId].occupation = r;
+        } else if (r.courseName === 'Fundamentals') {
+            groups[r.studentId].fundamentals = r;
+        }
+        
+        // Update pass/fail status
+        if (r.grade === 'F' || !r.marks) {
+            groups[r.studentId].allPassed = false;
+        }
+        if (r.status !== 'approved') {
+            groups[r.studentId].allPublished = false;
+        }
+    });
+    
+    return Object.values(groups);
+}, [filteredResults, students]);
+
+// Get unique levels from students (dynamically)
+const levels = useMemo(() => {
+    const levelSet = new Set();
+    students.forEach(s => {
+        if (s.level) levelSet.add(s.level);
+    });
+    return Array.from(levelSet).sort();
+}, [students]);
+    
 
     return (
         <div>
@@ -158,18 +223,29 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
             <PageHeader
                 title="Results Management"
                 subtitle="Edit, publish, and manage student results"
-                action={
-                    <div className="flex gap-2">
-                        <Button variant="primary" onClick={() => setShowBulkModal(true)}>
-                            <Layers className="w-4 h-4 inline mr-1" />
-                            Publish Results
-                        </Button>
-                    </div>
-                }
+               action={
+    <div className="flex gap-2">
+        <Button variant="primary" onClick={() => setShowBulkModal(true)}>
+            <Layers className="w-4 h-4 inline mr-1" />
+            {publishButtonLabel}
+        </Button>
+    </div>
+}
             />
 
             {/* Filters */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                      {/* Filters */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Select value={filters.programName} onChange={e => setFilters({ ...filters, programName: e.target.value })}>
+                        <option value="">All Programs</option>
+                        {programs.map(p => <option key={p as string} value={p as string}>{p as string}</option>)}
+                    </Select>
+                   <Select value={filters.level} onChange={e => setFilters({ ...filters, level: e.target.value })}>
+    <option value="">All Levels</option>
+    {levels.map(level => <option key={level as string} value={level as string}>{level as string}</option>)}
+</Select>
+                </div>
                 <div className="relative">
                     <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                     <Input
@@ -179,113 +255,115 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
                         className="pl-9"
                     />
                 </div>
-                <Select value={filters.programName} onChange={e => setFilters({ ...filters, programName: e.target.value })}>
-                    <option value="">All Programs</option>
-                    {programs.map(p => <option key={p as string} value={p as string}>{p as string}</option>)}
-                </Select>
-                <Select value={filters.level} onChange={e => setFilters({ ...filters, level: e.target.value })}>
-                    <option value="">All Levels</option>
-                    <option value="Level 1">Level 1</option>
-                    <option value="Level 2">Level 2</option>
-                    <option value="Level 3">Level 3</option>
-                    <option value="Level 4">Level 4</option>
-                </Select>
-                <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>
-                    <option value="">All Statuses</option>
-                    <option value="pending">Pending (Not Published)</option>
-                    <option value="approved">Published</option>
-                </Select>
             </div>
 
             {/* Statistics Bar */}
             <div className="bg-slate-100 rounded-xl p-3 mb-4 flex justify-between items-center">
-                <span className="text-sm text-slate-600">Ready to publish: <strong>{pendingCount}</strong> results</span>
-                <span className="text-sm text-slate-600">Total results: <strong>{filteredResults.length}</strong></span>
+                <div className="bg-slate-100 rounded-xl p-3 mb-4">
+    <span className="text-sm text-slate-600">Ready to publish: <strong>{pendingStudentsCount}</strong> students</span>
+</div>
+                {/* <span className="text-sm text-slate-600">Total results: <strong>{filteredResults.length}</strong></span> */}
             </div>
 
             {/* Results Table */}
-            <Table headers={['Student', 'Program', 'Reg Status', 'Level', 'Exam', 'Grade', 'Status', 'Actions']} rowCount={filteredResults.length}>
-                {filteredResults.map(r => {
-                    const stu = students.find(s => s.id === r.studentId);
-                    const cou = courses.find(c => c.id === r.courseId);
-                    const regStatus = getRegistrationStatus(r.studentId);
-                    const canPublish = regStatus === 'Approved' && r.status === 'pending';
-                    const isPublished = r.status === 'approved';
-
-                    return (
-                        <tr key={r.id} className="hover:bg-slate-50">
-                            <td className="px-4 py-3">
-                                <div className="font-medium text-slate-900 text-sm">{stu?.name}</div>
-                                <div className="font-mono text-xs text-slate-500">{r.studentReg}</div>
-                            </td>
-                            <td className="px-4 py-3 text-sm">{stu?.program || '—'}</td>
-                            <td className="px-4 py-3">
-                                {regStatus === 'Approved' ? (
-                                    <Badge status="success">Approved</Badge>
-                                ) : (
-                                    <Badge status="warning">Pending</Badge>
-                                )}
-                            </td>
-                            <td className="px-4 py-3 text-sm">{stu?.level || '—'}</td>
-                            <td className="px-4 py-3 text-center font-medium">{r.exam ?? '—'}</td>
-                            <td className="px-4 py-3 text-center">
-                                <span className={`font-bold ${r.grade === 'F' ? 'text-red-600' : 'text-emerald-600'}`}>
-                                    {r.grade}
-                                </span>
-                            </td>
-                            <td className="px-4 py-3">
-                                {isPublished ? (
-                                    <Badge status="success">Published ✓</Badge>
-                                ) : (
-                                    <Badge status="warning">Not Published</Badge>
-                                )}
-                            </td>
-                            <td className="px-4 py-3">
-                                <div className="flex gap-2">
-                                    {/* Edit Button - Always show for pending results */}
-                                    {!isPublished && (
-                                        <button
-                                            onClick={() => openEditModal(r)}
-                                            className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                                            title="Edit result"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                    {isPublished && (
-                                        <button
-                                            className="p-1.5 bg-slate-100 text-slate-400 rounded cursor-not-allowed"
-                                            disabled
-                                            title="Published results cannot be edited"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                    )}
-
-                                    {/* Publish Button */}
-                                    {!isPublished && (
-                                        <button
-                                            onClick={() => handlePublish(r.id, r.studentId)}
-                                            disabled={!canPublish}
-                                            className={`px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition ${canPublish
-                                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                }`}
-                                            title={!canPublish ? 'Student registration must be approved first' : 'Publish result'}
-                                        >
-                                            <Send className="w-3 h-3" />
-                                            Publish
-                                        </button>
-                                    )}
-                                    {isPublished && (
-                                        <span className="text-xs text-slate-400 py-1.5">Locked</span>
-                                    )}
-                                </div>
-                            </td>
-                        </tr>
-                    );
-                })}
-            </Table>
+           <Table 
+    headers={['Student', 'Program', 'Level', 'Reg Status', 'Practical', 'Occupation', 'Fundamentals', 'Overall', 'Actions']} 
+    rowCount={groupedByStudent.length}
+>
+    {groupedByStudent.map((group: any) => {
+        const canPublish = group.regStatus === 'Approved' && !group.allPublished;
+        
+        return (
+            <tr key={group.studentId} className="hover:bg-slate-50">
+                <td className="px-4 py-3">
+                    <div className="font-medium text-slate-900 text-sm">{group.studentName}</div>
+                    <div className="font-mono text-xs text-slate-500">{group.studentReg}</div>
+                </td>
+                <td className="px-4 py-3 text-sm">{group.studentProgram || '—'}</td>
+                <td className="px-4 py-3 text-sm">{group.studentLevel || '—'}</td>
+                <td className="px-4 py-3">
+                    {group.regStatus === 'Approved' ? (
+                        <Badge status="success">Approved</Badge>
+                    ) : (
+                        <Badge status="warning">Pending</Badge>
+                    )}
+                </td>
+                {/* Practical Column */}
+                <td className="px-4 py-3 text-center">
+                    {group.practical ? (
+                        <div>
+                            <span className="font-medium">{group.practical.marks ?? '—'}</span>
+                            <span className={`ml-1 font-bold ${group.practical.grade === 'F' ? 'text-red-600' : 'text-emerald-600'}`}>
+                                ({group.practical.grade})
+                            </span>
+                        </div>
+                    ) : '—'}
+                 </td>
+                {/* Occupation Column */}
+                <td className="px-4 py-3 text-center">
+                    {group.occupation ? (
+                        <div>
+                            <span className="font-medium">{group.occupation.marks ?? '—'}</span>
+                            <span className={`ml-1 font-bold ${group.occupation.grade === 'F' ? 'text-red-600' : 'text-emerald-600'}`}>
+                                ({group.occupation.grade})
+                            </span>
+                        </div>
+                    ) : '—'}
+                 </td>
+                {/* Fundamentals Column */}
+                <td className="px-4 py-3 text-center">
+                    {group.fundamentals ? (
+                        <div>
+                            <span className="font-medium">{group.fundamentals.marks ?? '—'}</span>
+                            <span className={`ml-1 font-bold ${group.fundamentals.grade === 'F' ? 'text-red-600' : 'text-emerald-600'}`}>
+                                ({group.fundamentals.grade})
+                            </span>
+                        </div>
+                    ) : '—'}
+                 </td>
+                {/* Overall Status */}
+                <td className="px-4 py-3">
+                    <Badge status={group.allPassed ? 'success' : 'error'}>
+                        {group.allPassed ? 'Passed' : 'Failed'}
+                    </Badge>
+                 </td>
+                {/* Actions */}
+                <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => {
+                                // Open first pending result for editing
+                                const resultToEdit = group.practical || group.occupation || group.fundamentals;
+                                if (resultToEdit && resultToEdit.status !== 'approved') {
+                                    openEditModal(resultToEdit);
+                                }
+                            }}
+                            className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                            title="Edit results"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                        {!group.allPublished && canPublish && (
+                            <button
+                                onClick={() => {
+                                    const pendingResults = [group.practical, group.occupation, group.fundamentals].filter(r => r && r.status === 'pending');
+                                    if (confirm(`Publish ${pendingResults.length} result(s) for ${group.studentName}?`)) {
+                                        pendingResults.forEach(r => approveResult(r.id));
+                                        setToast(`${pendingResults.length} result(s) published`);
+                                    }
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm font-medium"
+                            >
+                                <Send className="w-3 h-3 inline mr-1" />
+                                Publish
+                            </button>
+                        )}
+                    </div>
+                 </td>
+             </tr>
+        );
+    })}
+</Table>
 
             {/* Edit Result Modal */}
             <Modal open={editModal} onClose={() => setEditModal(false)} title="Edit Result">
@@ -300,8 +378,8 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
                             type="number"
                             min="0"
                             max="100"
-                            value={editForm.exam}
-                            onChange={e => setEditForm({ exam: e.target.value })}
+                            value={editForm.marks}
+                            onChange={e => setEditForm({ marks: e.target.value })}
                             required
                         />
                     </Field>
