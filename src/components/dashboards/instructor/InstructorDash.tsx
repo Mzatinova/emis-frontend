@@ -9,13 +9,17 @@ import { useRegistration } from '@/contexts/RegistrationContext';
 
 const InstructorDash: React.FC<{ active: string }> = ({ active }) => {
  const { currentUser, students, courses, results, sessions, addResult, updateResult, apiRequest } = useEMIS();
- const { registrations } = useRegistration();
+//  const { registrations } = useRegistration();
+ const { registrations, fetchInstructorRegistrations } = useRegistration();
  
   const [toast, setToast] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<string>('');
     const [myAssignedCourses, setMyAssignedCourses] = useState<{ programName: string; level: number; courseName: string }[]>([]);
 
- 
+ useEffect(() => {
+    fetchInstructorRegistrations();
+}, []);
+
 useEffect(() => {
     const fetchAssignedCourses = async () => {
       try {

@@ -12,7 +12,7 @@ interface InstructorResultsProps {
 
 const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, myAssignedCourses }) => {
     const { currentUser, students, courses, results,addResult, updateResult, refresh } = useEMIS();
-    const { registrations } = useRegistration();
+    const { registrations, fetchInstructorRegistrations } = useRegistration();
 
     const [selectedClass, setSelectedClass] = useState<any>(null);
     const [search, setSearch] = useState('');
@@ -253,6 +253,7 @@ if (existing) {
         setEditingStudentId(null);
         setToast('Result saved');
         await refresh();
+        await fetchInstructorRegistrations();
     } catch (error) {
         setToast('Failed to save result');
     }
@@ -337,6 +338,7 @@ if (existing) {
     setSaving(false);
     setToast(`Saved: ${saved}, Failed: ${failed}`);
     await refresh();
+    await fetchInstructorRegistrations();
 };
 //     const handleSaveAll = async () => {
 //         setSaving(true);
@@ -395,6 +397,7 @@ if (existing) {
         setCsvOpen(false);
         setToast(`${added} results uploaded`);
         await refresh();
+        await fetchInstructorRegistrations();
     };
 
     // Group assigned courses into boxes

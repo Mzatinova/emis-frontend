@@ -43,6 +43,7 @@ export interface Result {
  marks: number | null;
   grade: string;
   status: string;
+  level?: number;
   createdAt: string;
 }
 
@@ -121,12 +122,14 @@ const getToken = () => localStorage.getItem('api_token');
 // };
 
 const apiRequest = async (endpoint: string, method: string = 'GET', body?: any) => {
+  const token = getToken();
+  console.log(`[apiRequest] ${method} ${endpoint} - Token:`, token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+  
   const headers: any = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',  // ← ADD THIS LINE
+    'Accept': 'application/json',
   };
 
-  const token = getToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -137,21 +140,54 @@ const apiRequest = async (endpoint: string, method: string = 'GET', body?: any) 
     body: body ? JSON.stringify(body) : undefined,
   });
 
+  console.log(`[apiRequest] Response status: ${response.status} for ${endpoint}`);
+
   if (response.status === 401) {
+    console.log(`[apiRequest] 401 on ${endpoint} - Token may be invalid`);
     localStorage.removeItem('api_token');
     localStorage.removeItem('emis_user');
-
     throw new Error('Session expired. Please login again.');
   }
 
   const data = await response.json();
-
   if (!response.ok) {
     throw new Error(data.message || 'API request failed');
   }
-
   return data;
 };
+
+// const apiRequest = async (endpoint: string, method: string = 'GET', body?: any) => {
+//   const headers: any = {
+//     'Content-Type': 'application/json',
+//     'Accept': 'application/json',  // ← ADD THIS LINE
+//   };
+
+//   const token = getToken();
+//   if (token) {
+//     headers['Authorization'] = `Bearer ${token}`;
+//   }
+
+//   const response = await fetch(`${API_BASE}${endpoint}`, {
+//     method,
+//     headers,
+//     body: body ? JSON.stringify(body) : undefined,
+//   });
+
+//   if (response.status === 401) {
+//     localStorage.removeItem('api_token');
+//     localStorage.removeItem('emis_user');
+
+//     throw new Error('Session expired. Please login again.');
+//   }
+
+//   const data = await response.json();
+
+//   if (!response.ok) {
+//     throw new Error(data.message || 'API request failed');
+//   }
+
+//   return data;
+// };
 
 export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -263,6 +299,8 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
           active: true,
           createdAt: new Date().toISOString(),
           regNumber: data.user.reg_number,
+          program: data.user.program,  // Add this line
+    level: data.user.level       // Add this line
         };
         persistUser(user, data.token);
         await refresh();
@@ -363,17 +401,48 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 };
 
+// const updateResult = async (id: string, r: any) => {
+//   const data = await apiRequest(`/results/${id}`, 'PUT', r);
+//   if (data.data) {
+//     setResults(prev => prev.map(res => res.id === id ? data.data : res));
+//   }
+// };
+
 const updateResult = async (id: string, r: any) => {
-  const data = await apiRequest(`/results/${id}`, 'PUT', r);
-  if (data.data) {
-    setResults(prev => prev.map(res => res.id === id ? data.data : res));
-  }
+    const data = await apiRequest(`/results/${id}`, 'PUT', r);
+    if (data.data) {
+        const mappedResult = {
+            ...data.data,
+            courseName: data.data.course_name,
+            studentId: data.data.student_id,
+            marks: data.data.marks,
+            grade: data.data.grade,
+            status: data.data.status
+        };
+        setResults(prev => prev.map(res => res.id === id ? mappedResult : res));
+    }
 };
+
+// const approveResult = async (id: string) => {
+//     const data = await apiRequest(`/results/${id}/publish`, 'POST');
+//     if (data.data) {
+//         setResults(prev => prev.map(r => r.id === id ? data.data : r));
+//     }
+// };
 
 const approveResult = async (id: string) => {
     const data = await apiRequest(`/results/${id}/publish`, 'POST');
     if (data.data) {
-        setResults(prev => prev.map(r => r.id === id ? data.data : r));
+        // Map the response to match your Result interface
+        const mappedResult = {
+            ...data.data,
+            courseName: data.data.course_name,
+            studentId: data.data.student_id,
+            marks: data.data.marks,
+            grade: data.data.grade,
+            status: data.data.status
+        };
+        setResults(prev => prev.map(r => r.id === id ? mappedResult : r));
     }
 };
 

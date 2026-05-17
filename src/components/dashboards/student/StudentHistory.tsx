@@ -1,45 +1,91 @@
-// src/components/dashboard/student/StudentHistory.tsx
+// src/components/dashboard/student/StudentResultsHistory.tsx
 import React from 'react';
 import { useEMIS } from '@/contexts/EMISContext';
 import { PageHeader, Badge } from '@/components/shared/UI';
 
-const StudentHistory: React.FC = () => {
-    const { currentUser, courses, results } = useEMIS();
+const StudentResultsHistory: React.FC = () => {
+    const { currentUser, courses, results, sessions } = useEMIS();
 
-    const myResults = results.filter(r => r.studentId === currentUser?.id && r.status === 'approved');
-    const sorted = [...myResults].sort((a, b) => new Date(b.approvedAt || 0).getTime() - new Date(a.approvedAt || 0).getTime());
+    const myResults = results.filter(r => String(r.studentId) === String(currentUser?.id) && r.status === 'approved');
+
+    // Group results by academic year using session
+    const groupedByYear: { [key: string]: any[] } = {};
+
+    myResults.forEach(r => {
+        const session = sessions.find(s => s.id === r.sessionId);
+        const year = session?.year || 'Unknown Year';
+        if (!groupedByYear[year]) {
+            groupedByYear[year] = [];
+        }
+        groupedByYear[year].push(r);
+    });
+
+    // Sort years descending (newest first)
+    const sortedYears = Object.keys(groupedByYear).sort().reverse();
 
     return (
         <div>
-            <PageHeader title="Result History" subtitle="Timeline of all approved results" />
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
-                <div className="space-y-4">
-                    {sorted.length === 0 && <p className="text-center py-12 text-slate-400">No history yet</p>}
-                    {sorted.map(r => {
-                        const c = courses.find(x => x.id === r.courseId);
-                        return (
-                            <div key={r.id} className="flex items-start gap-4 pb-4 border-b border-slate-100 last:border-0">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${r.grade === 'F' ? 'bg-red-500' : 'bg-emerald-600'}`}>
-                                    {r.grade}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between flex-wrap">
-                                        <p className="font-medium text-slate-900">{c?.code} - {c?.name}</p>
-                                        <Badge status="approved" />
-                                    </div>
-                                    <div className="flex gap-4 text-xs text-slate-500 mt-1">
-                                        <span>Exam: {r.exam ?? '—'}</span>
-                                        <span>Grade: {r.grade}</span>
-                                        <span>Approved: {r.approvedAt ? new Date(r.approvedAt).toLocaleDateString() : '—'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+            <PageHeader title="Result History" />
+
+            {sortedYears.length === 0 && (
+                <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-400">
+                    No results available
                 </div>
-            </div>
+            )}
+
+            {sortedYears.map(year => (
+                <div key={year} className="mb-6">
+                    <div className="text-center text-sm text-slate-600">
+                Academic Year: <span className="font-medium text-emerald-600">{sessions.find(s => s.active)?.year || 'None'}</span>
+           
+                    <p className="text-sm text-slate-500 mb-3 px-2">
+                        Level: {[...new Set(groupedByYear[year].map(r => r.level))].join(', ')}
+                        <span className="mx-3">|</span>
+                        Status: {groupedByYear[year].every(r => r.grade !== 'F' && r.marks !== null) ? (
+                            <span className="text-emerald-600 font-medium">PASS AND PROCEED</span>
+                        ) : (
+                            <span className="text-red-600 font-medium">FAILED - REPEAT</span>
+                        )}
+                    </p>
+                     </div>
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-slate-50 border-b border-slate-200">
+                                <tr>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Course</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Score</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Grade</th>
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {groupedByYear[year].map(r => {
+                                    const course = courses.find(c => c.id === r.courseId);
+                                    return (
+                                        <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
+
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-sm text-slate-900">{course?.name || r.courseName}</div>
+                                                <div className="text-xs text-slate-500">{course?.code}</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center font-medium">{r.marks ?? '—'}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`font-bold ${r.grade === 'F' ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                    {r.grade}
+                                                </span>
+                                            </td>
+
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ))}
         </div>
     );
 };
 
-export default StudentHistory;
+export default StudentResultsHistory;
