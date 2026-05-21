@@ -248,12 +248,16 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedUser && savedToken) {
         try {
           setCurrentUser(JSON.parse(savedUser));
-          await refresh();
+          // Show UI immediately by setting loading false
+        setLoading(false);
+        // Load data in background (don't await)
+        refresh();
+          // await refresh();
         } catch (e) {
           console.error('Restore session error:', e);
         }
       }
-      setLoading(false);
+      // setLoading(false);
     };
     init();
   }, []);
@@ -303,7 +307,11 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
     level: data.user.level       // Add this line
         };
         persistUser(user, data.token);
-        await refresh();
+        // Show UI immediately
+  setLoading(false);
+  // Load data in background
+  refresh();
+        // await refresh();
         return user;
       }
       return null;

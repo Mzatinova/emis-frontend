@@ -240,14 +240,14 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
         }
     };
 
-    // if (loading) {
-    //     return (
-    //         <div className="p-8 text-center flex items-center justify-center gap-2">
-    //             <Loader2 className="w-5 h-5 animate-spin" />
-    //             <span>Loading registration data...</span>
-    //         </div>
-    //     );
-    // }
+    if (loading) {
+        return (
+            <div className="p-8 text-center flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading registration data...</span>
+            </div>
+        );
+    }
 
     return (
         <div>
