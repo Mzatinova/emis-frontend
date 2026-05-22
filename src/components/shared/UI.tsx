@@ -1,16 +1,27 @@
 import React from 'react';
 
 export const StatCard: React.FC<{ label: string; value: string | number; icon: any; color: string; sub?: string }> = ({ label, value, icon: Icon, color, sub }) => (
-  <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition">
-    <div className="flex items-start justify-between mb-3">
-      <div>
-        <p className="text-sm text-slate-500 font-medium">{label}</p>
-        <p className="text-3xl font-bold text-slate-900 mt-1">{value}</p>
-        {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
-      </div>
-      <div className={`p-2.5 rounded-lg ${color}`}><Icon className="w-5 h-5 text-white" /></div>
-    </div>
+  // <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition">
+  //   <div className="flex items-start justify-between mb-3">
+  //     <div>
+  //       <p className="text-sm text-slate-500 font-medium">{label}</p>
+  //       {/* <p className="text-3xl font-bold text-slate-900 mt-1">{value}</p> */}
+  //       <p className="text-xl font-bold text-slate-900 mt-1">{value}</p>
+  //       {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+  //     </div>
+  //     <div className={`p-2.5 rounded-lg ${color}`}><Icon className="w-5 h-5 text-white" /></div>
+  //   </div>
+  // </div>
+  <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col h-full">
+  <div className="flex justify-end">
+    <div className={`p-2.5 rounded-lg ${color}`}><Icon className="w-5 h-5 text-white" /></div>
   </div>
+  <div className="mt-auto">
+    <p className="text-sm text-slate-500 font-medium">{label}</p>
+    <p className="text-xl font-bold text-slate-900 mt-1">{value}</p>
+    {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+  </div>
+</div>
 );
 
 export const Badge: React.FC<{ status: 'pending' | 'approved' | 'active' | 'inactive' | 'locked' | string; children?: React.ReactNode }> = ({ status, children }) => {

@@ -68,6 +68,8 @@ export interface StudentProgress {
 
 interface RegistrationState {
     feeStructures: FeeStructure[];
+        feeStructuresList: any[];
+  
     registrationPeriods: RegistrationPeriod[];
     invoices: Invoice[];
     fetchInstructorRegistrations: () => Promise<void>;
@@ -97,6 +99,7 @@ interface RegistrationState {
     getPendingInvoices: () => Invoice[];
     getAllRegistrations: () => StudentRegistration[];
     fetchInvoices: () => Promise<void>;
+      fetchFeeStructuresGlobal: () => Promise<void>;
 }
 
 const RegistrationContext = createContext<RegistrationState | undefined>(undefined);
@@ -116,6 +119,7 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [registrations, setRegistrations] = useState<StudentRegistration[]>([]);
     const [studentProgress, setStudentProgress] = useState<StudentProgress[]>([]);
     const [loading, setLoading] = useState(true);
+    const [feeStructuresList, setFeeStructuresList] = useState<any[]>([]);
 
     // Fetch invoices from backend
     const fetchInvoices = async () => {
@@ -128,6 +132,16 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             console.error('Failed to fetch invoices:', error);
         }
     };
+    const fetchFeeStructuresGlobal = async () => {
+    try {
+        const response = await apiRequest('/fee-structures');
+        if (response.data) {
+            setFeeStructuresList(response.data);
+        }
+    } catch (error) {
+        console.error('Failed to fetch fee structures:', error);
+    }
+};
 
     const fetchInstructorRegistrations = async () => {
     console.log('fetchInstructorRegistrations called');
@@ -166,6 +180,8 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         
         // Fetch invoices from backend
         await fetchInvoices();
+        // Add this line
+    await fetchFeeStructuresGlobal();
         
         // Fetch registrations from backend for instructor
         await fetchInstructorRegistrations();
@@ -427,7 +443,9 @@ const saveInvoices = (data: Invoice[]) => {
 
     return (
         <RegistrationContext.Provider value={{
+             
             feeStructures,
+             feeStructuresList,
             registrationPeriods,
             invoices,
             registrations,
@@ -456,6 +474,7 @@ const saveInvoices = (data: Invoice[]) => {
             getAllRegistrations,
             fetchInvoices,
 fetchInstructorRegistrations,
+fetchFeeStructuresGlobal,
         }}>
             {children}
         </RegistrationContext.Provider>

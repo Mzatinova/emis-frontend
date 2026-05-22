@@ -45,7 +45,7 @@ const AppLayout: React.FC = () => {
       case 'accounts':
         return (
           <RegistrationProvider>
-            <AccountsDash active={active} />
+            <AccountsDash active={active} setActive={setActive} />
           </RegistrationProvider>
         );
       case 'student':
