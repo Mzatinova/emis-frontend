@@ -245,19 +245,28 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedUser = localStorage.getItem('emis_user');
       const savedToken = localStorage.getItem('api_token');
 
-      if (savedUser && savedToken) {
+            if (savedUser && savedToken) {
         try {
           setCurrentUser(JSON.parse(savedUser));
-          // Show UI immediately by setting loading false
-        setLoading(false);
-        // Load data in background (don't await)
-        refresh();
-          // await refresh();
+          await refresh();  // Only this line - wait for data to load
         } catch (e) {
           console.error('Restore session error:', e);
         }
       }
-      // setLoading(false);
+
+      // if (savedUser && savedToken) {
+      //   try {
+      //     setCurrentUser(JSON.parse(savedUser));
+      //     // Show UI immediately by setting loading false
+      //   setLoading(false);
+      //   // Load data in background (don't await)
+      //   refresh();
+      //     await refresh();
+      //   } catch (e) {
+      //     console.error('Restore session error:', e);
+      //   }
+      // }
+      setLoading(false);
     };
     init();
   }, []);
@@ -294,7 +303,7 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
 
-      if (data.success) {
+            if (data.success) {
         const user: User = {
           id: data.user.id,
           name: data.user.name,
@@ -303,17 +312,35 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
           active: true,
           createdAt: new Date().toISOString(),
           regNumber: data.user.reg_number,
-          program: data.user.program,  // Add this line
-    level: data.user.level       // Add this line
+          program: data.user.program,
+          level: data.user.level
         };
         persistUser(user, data.token);
-        // Show UI immediately
-  setLoading(false);
-  // Load data in background
-  refresh();
-        // await refresh();
+        await refresh();     // Wait for data to load first
+        setLoading(false);   // Then set loading to false
         return user;
       }
+
+  //     if (data.success) {
+  //       const user: User = {
+  //         id: data.user.id,
+  //         name: data.user.name,
+  //         email: data.user.email,
+  //         role: data.user.role || (type === 'student' ? 'student' : 'staff'),
+  //         active: true,
+  //         createdAt: new Date().toISOString(),
+  //         regNumber: data.user.reg_number,
+  //         program: data.user.program,  // Add this line
+  //   level: data.user.level       // Add this line
+  //       };
+  //       persistUser(user, data.token);
+  //       // Show UI immediately
+  // // setLoading(false);
+  // // Load data in background
+  // refresh();
+  //       // await refresh();
+  //       return user;
+  //     }
       return null;
     } catch (error) {
       console.error('Login error:', error);
