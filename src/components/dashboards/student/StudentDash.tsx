@@ -14,7 +14,7 @@ import {
 import StudentRegistration from './StudentRegistration';
 import StudentResults from './StudentResults';
 import StudentHistory from './StudentHistory';
-import StudentInvoices from './StudentInvoices';
+// import StudentInvoices from './StudentInvoices';
 
 const StudentDash: React.FC<{ active: string }> = ({ active }) => {
   const { currentUser, results, sessions } = useEMIS();
@@ -191,9 +191,9 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
   }
 
   // ========== INVOICES VIEW ==========
-  if (active === 'invoices') {
-    return <StudentInvoices />;
-  }
+  // if (active === 'invoices') {
+  //   return <StudentInvoices />;
+  // }
 
   // ========== RESULTS VIEW ==========
   if (active === 'results') {

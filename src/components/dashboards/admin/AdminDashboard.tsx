@@ -122,13 +122,13 @@ const pendingStudents = invoices.filter(i => i.status === 'pending' || i.status 
                             <span className="text-lg font-bold text-amber-600">{resultsPending}</span>
                         </div>
 
-                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                        {/* <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
                             <div className="flex items-center gap-2">
                                 <Upload className="w-4 h-4 text-blue-600" />
                                 <span className="text-sm font-medium">Results Just Uploaded (7 days)</span>
                             </div>
                             <span className="text-lg font-bold text-blue-600">{resultsJustUploaded}</span>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

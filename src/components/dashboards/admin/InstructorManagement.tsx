@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useEMIS, User } from '@/contexts/EMISContext';
 import { PageHeader, Modal, Field, Select, Button, Table, Toast, Badge, Input } from '@/components/shared/UI';
-import { Plus, Edit2, Search, Power, Users, BookOpen, X, Check } from 'lucide-react';
+import { Plus, Edit2, Search, Power, Users, BookOpen, X, Check, Loader2 } from 'lucide-react';
 
 interface ProgramCourse {
     level: number;
@@ -22,28 +22,29 @@ interface InstructorManagementProps {
 }
 
 const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setToast }) => {
-   const { users, courses, apiRequest } = useEMIS();
+//    const { users, courses, apiRequest } = useEMIS();
+const { users, courses, apiRequest, programsList, fetchProgramsGlobal } = useEMIS();
 
     const [instructorSearch, setInstructorSearch] = useState('');
     const [assignModal, setAssignModal] = useState(false);
     const [selectedInstructor, setSelectedInstructor] = useState<User | null>(null);
 
     // Load programs from localStorage
-    const [programs, setPrograms] = useState<Program[]>([]);
+    // const [programs, setPrograms] = useState<Program[]>([]);
 
-useEffect(() => {
-    const fetchPrograms = async () => {
-        try {
-            const response = await apiRequest('/programs');
-            if (response.data) {
-                setPrograms(response.data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch programs:', error);
-        }
-    };
-    fetchPrograms();
-}, []);
+// useEffect(() => {
+//     const fetchPrograms = async () => {
+//         try {
+//             const response = await apiRequest('/programs');
+//             if (response.data) {
+//                 setPrograms(response.data);
+//             }
+//         } catch (error) {
+//             console.error('Failed to fetch programs:', error);
+//         }
+//     };
+//     fetchPrograms();
+// }, []);
 
     const instructors = users.filter(u => u.role === 'instructor' && u.active);
 
@@ -57,7 +58,7 @@ useEffect(() => {
     // Get all assignments for an instructor from programs
     const getInstructorAssignments = (instructorId: string) => {
         const assignments: { programName: string; level: number; courseName: string }[] = [];
-        programs.forEach(program => {
+        programsList.forEach(program => {
             program.courses.forEach(course => {
                 if (course.instructorId === instructorId) {
                     assignments.push({
@@ -83,6 +84,7 @@ useEffect(() => {
             instructorId: instructorId,
             assignments: []
         });
+         await fetchProgramsGlobal();
         setToast(`Removed ${selectedInstructor?.name} from all courses`);
         setAssignModal(false);
     } catch (error) {
@@ -115,7 +117,7 @@ useEffect(() => {
     const getCurrentAssignmentsForInstructor = () => {
         if (!selectedInstructor) return {};
         const assignments: Record<string, boolean> = {};
-        programs.forEach(program => {
+        programsList.forEach(program => {
             program.courses.forEach(course => {
                 if (course.instructorId === selectedInstructor.id) {
                     const key = `${program.id}-${course.level}-${course.courseName}`;
@@ -149,18 +151,29 @@ const saveAssignments = async () => {
             assignments.push({ programId, level, courseName });
         }
     });
+    
 
     try {
         await apiRequest('/instructor/assign', 'POST', {
             instructorId: selectedInstructor.id,
             assignments
         });
+        await fetchProgramsGlobal();
         setToast(`Assignments saved for ${selectedInstructor.name}`);
         setAssignModal(false);
     } catch (error) {
         setToast('Failed to save assignments');
     }
 };
+
+if (!programsList || programsList.length === 0) {
+    return (
+        <div className="p-8 text-center flex items-center justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Loading programs...</span>
+        </div>
+    );
+}
 
     return (
         <div>
@@ -242,7 +255,7 @@ const saveAssignments = async () => {
                 >
                     <div className="space-y-4">
                         <div className="max-h-[60vh] overflow-y-auto space-y-6">
-                            {programs.map(program => (
+                            {programsList.map(program => (
                                 <div key={program.id} className="border border-slate-200 rounded-lg overflow-hidden">
                                     <div className="bg-slate-100 px-4 py-2 font-semibold text-slate-800">
                                         {program.name}

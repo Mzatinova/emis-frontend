@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEMIS } from '@/contexts/EMISContext';
 import { PageHeader, Button, Badge, Modal, Input, Toast } from '@/components/shared/UI';
-import { CreditCard, Upload, CheckCircle, XCircle, FileText, Calendar, Loader2 } from 'lucide-react';
+import { CreditCard, Upload, CheckCircle, XCircle, FileText, Calendar, Loader2, Clock } from 'lucide-react';
 
 interface StudentRegistrationProps {
     toast: string;
@@ -9,16 +9,17 @@ interface StudentRegistrationProps {
 }
 
 const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToast }) => {
-    const { currentUser, students, apiRequest } = useEMIS();
-
-    const [loading, setLoading] = useState(false);
-    const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
-    const [canRegister, setCanRegister] = useState(false);
-    const [registrationReason, setRegistrationReason] = useState('');
-    const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(null);
-    const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
-    const [myInvoices, setMyInvoices] = useState<any[]>([]);
-    const [feeStructures, setFeeStructures] = useState<any[]>([]);
+    // const { currentUser, students, apiRequest } = useEMIS();
+// const { currentUser, students, apiRequest, feeStructuresList } = useEMIS();
+const { currentUser, students, apiRequest, feeStructuresList, eligibleLevels, myRegistrations, myInvoices, canRegister, registrationReason, currentRegistrationPeriod, fetchRegistrationData } = useEMIS();    
+const [loading, setLoading] = useState(false);
+    // const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
+    // const [canRegister, setCanRegister] = useState(false);
+    // const [registrationReason, setRegistrationReason] = useState('');
+    // const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(null);
+    // const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
+    // const [myInvoices, setMyInvoices] = useState<any[]>([]);
+    // const [feeStructures, setFeeStructures] = useState<any[]>([]);
 
     const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
     const [selectedType, setSelectedType] = useState<'full_level' | 'repeater'>('full_level');
@@ -35,51 +36,51 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
     const currentStudent = students.find(s => s.id === currentUser?.id);
 
     // Fetch fee structures
-    const fetchFeeStructures = async () => {
-        try {
-            const response = await apiRequest('/fee-structures');
-            if (response.data) {
-                setFeeStructures(response.data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch fee structures:', error);
-        }
-    };
+    // const fetchFeeStructures = async () => {
+    //     try {
+    //         const response = await apiRequest('/fee-structures');
+    //         if (response.data) {
+    //             setFeeStructures(response.data);
+    //         }
+    //     } catch (error) {
+    //         console.error('Failed to fetch fee structures:', error);
+    //     }
+    // };
 
     // Fetch all registration data
-    const fetchData = async () => {
-        if (!currentUser?.id) return;
+    // const fetchData = async () => {
+    //     if (!currentUser?.id) return;
 
-        setLoading(true);
-        try {
-            const [periodRes, eligibleRes, canRegisterRes, registrationsRes, invoicesRes] = await Promise.all([
-                apiRequest('/registration/period'),
-                apiRequest(`/registration/eligible-levels/${currentUser.id}`),
-                apiRequest(`/registration/can-register/${currentUser.id}`),
-                apiRequest(`/registration/my-registrations/${currentUser.id}`),
-                apiRequest(`/registration/my-invoices/${currentUser.id}`)
-            ]);
+    //     setLoading(true);
+    //     try {
+    //         const [periodRes, eligibleRes, canRegisterRes, registrationsRes, invoicesRes] = await Promise.all([
+    //             apiRequest('/registration/period'),
+    //             apiRequest(`/registration/eligible-levels/${currentUser.id}`),
+    //             apiRequest(`/registration/can-register/${currentUser.id}`),
+    //             apiRequest(`/registration/my-registrations/${currentUser.id}`),
+    //             apiRequest(`/registration/my-invoices/${currentUser.id}`)
+    //         ]);
 
-            if (periodRes.data) setCurrentRegistrationPeriod(periodRes.data);
-            if (eligibleRes.data) setEligibleLevels(eligibleRes.data);
-            if (canRegisterRes.data) {
-                setCanRegister(canRegisterRes.data.canRegister);
-                setRegistrationReason(canRegisterRes.data.reason || '');
-            }
-            if (registrationsRes.data) setMyRegistrations(registrationsRes.data);
-            if (invoicesRes.data) setMyInvoices(invoicesRes.data);
-        } catch (error) {
-            console.error('Failed to fetch registration data:', error);
-            setToast('Failed to load registration data');
-        } finally {
-            setLoading(false);
-        }
-    };
+    //         if (periodRes.data) setCurrentRegistrationPeriod(periodRes.data);
+    //         if (eligibleRes.data) setEligibleLevels(eligibleRes.data);
+    //         if (canRegisterRes.data) {
+    //             setCanRegister(canRegisterRes.data.canRegister);
+    //             setRegistrationReason(canRegisterRes.data.reason || '');
+    //         }
+    //         if (registrationsRes.data) setMyRegistrations(registrationsRes.data);
+    //         if (invoicesRes.data) setMyInvoices(invoicesRes.data);
+    //     } catch (error) {
+    //         console.error('Failed to fetch registration data:', error);
+    //         setToast('Failed to load registration data');
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
-    useEffect(() => {
-        fetchFeeStructures();
-        fetchData();
-    }, [currentUser?.id]);
+    // useEffect(() => {
+    //     // fetchFeeStructures();
+    //     fetchData();
+    // }, [currentUser?.id]);
 
     // Get fee for selected level from fee_structures table
 
@@ -91,7 +92,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
         ? selectedLevel 
         : parseInt(String(selectedLevel).match(/\d+/)?.[0] || '0');
     
-    const fee = feeStructures.find(f => 
+    const fee = feeStructuresList.find(f => 
         f.program_id === currentStudent.program && 
         Number(f.level) === studentLevelNumber
     );
@@ -179,7 +180,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
             setToast(`Registration initiated! Invoice created. Please upload payment receipt.`);
             setSelectedLevel(null);
             setSelectedCourses([]);
-            fetchData();
+            await fetchRegistrationData(currentUser!.id);
+            // fetchData();
         } catch (error: any) {
             console.error('Failed to create registration:', error);
             setToast(error.message || 'Failed to create registration');
@@ -201,7 +203,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
             setReceiptModal(false);
             setReceiptImage('');
             setToast('Receipt uploaded successfully. Awaiting Accounts approval.');
-            fetchData();
+           await fetchRegistrationData(currentUser!.id);
+            // fetchData();
         } catch (error) {
             console.error('Failed to upload receipt:', error);
             setToast('Failed to upload receipt');
@@ -240,14 +243,23 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
         }
     };
 
-    if (loading) {
-        return (
-            <div className="p-8 text-center flex items-center justify-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Loading registration data...</span>
-            </div>
-        );
-    }
+    // if (loading) {
+    //     return (
+    //         <div className="p-8 text-center flex items-center justify-center gap-2">
+    //             <Loader2 className="w-5 h-5 animate-spin" />
+    //             <span>Loading registration data...</span>
+    //         </div>
+    //     );
+    // }
+
+//     if (!feeStructuresList || feeStructuresList.length === 0) {
+//     return (
+//         <div className="p-8 text-center flex items-center justify-center gap-2">
+//             <Loader2 className="w-5 h-5 animate-spin" />
+//             <span>Loading registration data...</span>
+//         </div>
+//     );
+// }
 
     return (
         <div>
@@ -302,7 +314,17 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
             {/* Eligible Levels Display */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Levels Card */}
-                <div className="bg-white border border-slate-200 rounded-xl">
+                {/* <div className="bg-white border border-slate-200 rounded-xl"> */}
+                {myRegistrations.some(reg => reg.registration_status === 'pending') ? (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+        <div className="flex flex-col items-center gap-2">
+            <Clock className="w-8 h-8 text-amber-600" />
+            <h3 className="font-semibold text-amber-800">Registration Pending</h3>
+            <p className="text-sm text-amber-700">You have a pending registration. Please wait for approval before registering for another level.</p>
+        </div>
+    </div>
+) : (
+    <div className="bg-white border border-slate-200 rounded-xl">
                     <div className="border-b border-slate-200 px-6 py-4">
                         <h3 className="font-semibold text-slate-900">Available Registration Options</h3>
                         <p className="text-sm text-slate-500">Based on your academic progress</p>
@@ -367,6 +389,8 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                         )}
                     </div>
                 </div>
+               
+                 )}
 
                 {/* My Registrations Card */}
                 <div className="bg-white border border-slate-200 rounded-xl">

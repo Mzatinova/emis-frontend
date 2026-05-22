@@ -505,7 +505,7 @@ if (existing) {
                             setExamValues(prev => ({ ...prev, [s.id]: e.target.value }));
                             setEditingStudentId(s.id); // Mark as needing save
                         }}
-                        className="w-24 text-center"
+                        className="w-28 text-center"
                         placeholder="Score"
                        disabled={isLocked || savedResults[s.id]}
                     />

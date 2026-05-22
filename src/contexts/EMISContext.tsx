@@ -65,6 +65,16 @@ interface EMISState {
   courses: Course[];
   results: Result[];
   audits: AuditLog[];
+  programsList: any[];
+   feeStructuresList: any[];
+   eligibleLevels: any[];
+  myRegistrations: any[];
+  myInvoices: any[];
+  canRegister: boolean;
+  registrationReason: string;
+  currentRegistrationPeriod: any;
+  
+
   login: (identifier: string, password: string, type: 'staff' | 'student') => Promise<User | null>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -80,7 +90,8 @@ interface EMISState {
 updateResult: (id: string, r: any) => Promise<void>;
 approveResult: (id: string) => Promise<void>;
   apiRequest: (endpoint: string, method?: string, body?: any) => Promise<any>;
-  
+  fetchProgramsGlobal: () => Promise<void>;
+  fetchRegistrationData: (studentId: string) => Promise<void>;
 }
 
 const EMISContext = createContext<EMISState | undefined>(undefined);
@@ -198,10 +209,19 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [courses, setCourses] = useState<Course[]>([]);
   const [results, setResults] = useState<Result[]>([]);
   const [audits, setAudits] = useState<AuditLog[]>([]);
+  const [programsList, setProgramsList] = useState<any[]>([]);
+  const [feeStructuresList, setFeeStructuresList] = useState<any[]>([]);
+  // Add states
+const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
+const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
+const [myInvoices, setMyInvoices] = useState<any[]>([]);
+const [canRegister, setCanRegister] = useState(false);
+const [registrationReason, setRegistrationReason] = useState('');
+const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(null);
 
   const refresh = async () => {
     try {
-      const [usersData, studentsData, sessionsData, coursesData, resultsData, auditsData] = await Promise.all([
+      const [usersData, studentsData, sessionsData, coursesData, resultsData, auditsData, programsData, feeStructuresData] = await Promise.all([
         apiRequest('/users').catch(() => ({ data: [] })),
         apiRequest('/students').catch(() => ({ data: [] })),
         apiRequest('/sessions').catch(() => ({ data: [] })),
@@ -209,6 +229,8 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // apiRequest('/results/student').catch(() => ({ data: [] })),
         apiRequest('/results/all').catch(() => ({ data: [] })),
         apiRequest('/audits').catch(() => ({ data: [] })),
+        apiRequest('/programs').catch(() => ({ data: [] })), 
+        apiRequest('/fee-structures').catch(() => ({ data: [] })),
       ]);
 
       if (usersData.data) setUsers(usersData.data);
@@ -234,10 +256,48 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
 }
       // if (resultsData.data) setResults(resultsData.data);
       if (auditsData.data) setAudits(auditsData.data);
+      if (programsData.data) setProgramsList(programsData.data);
+      if (feeStructuresData.data) setFeeStructuresList(feeStructuresData.data); 
     } catch (error) {
       console.error('Refresh error:', error);
     }
+
+    
   };
+
+  const fetchProgramsGlobal = async () => {
+    try {
+        const response = await apiRequest('/programs');
+        if (response.data) {
+            setProgramsList(response.data);
+        }
+    } catch (error) {
+        console.error('Failed to fetch programs:', error);
+    }
+};
+
+// Add fetch function
+const fetchRegistrationData = async (studentId: string) => {
+    try {
+        const [periodRes, eligibleRes, canRegisterRes, registrationsRes, invoicesRes] = await Promise.all([
+            apiRequest('/registration/period'),
+            apiRequest(`/registration/eligible-levels/${studentId}`),
+            apiRequest(`/registration/can-register/${studentId}`),
+            apiRequest(`/registration/my-registrations/${studentId}`),
+            apiRequest(`/registration/my-invoices/${studentId}`)
+        ]);
+        if (periodRes.data) setCurrentRegistrationPeriod(periodRes.data);
+        if (eligibleRes.data) setEligibleLevels(eligibleRes.data);
+        if (canRegisterRes.data) {
+            setCanRegister(canRegisterRes.data.canRegister);
+            setRegistrationReason(canRegisterRes.data.reason || '');
+        }
+        if (registrationsRes.data) setMyRegistrations(registrationsRes.data);
+        if (invoicesRes.data) setMyInvoices(invoicesRes.data);
+    } catch (error) {
+        console.error('Failed to fetch registration data:', error);
+    }
+};
 
   useEffect(() => {
     const init = async () => {
@@ -247,8 +307,14 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (savedUser && savedToken) {
         try {
-          setCurrentUser(JSON.parse(savedUser));
+          const user = JSON.parse(savedUser);
+    setCurrentUser(user);
+          // setCurrentUser(JSON.parse(savedUser));
           await refresh();  // Only this line - wait for data to load
+          //  await fetchRegistrationData(user.id); 
+          if (user.role === 'student') {
+    await fetchRegistrationData(user.id);
+          }
         } catch (e) {
           console.error('Restore session error:', e);
         }
@@ -317,6 +383,10 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         persistUser(user, data.token);
         await refresh();     // Wait for data to load first
+        // await fetchRegistrationData(user.id);
+        if (user.role === 'student') {
+    await fetchRegistrationData(user.id);
+}
         setLoading(false);   // Then set loading to false
         return user;
       }
@@ -491,6 +561,15 @@ const approveResult = async (id: string) => {
       courses,
       results,
       audits,
+        programsList,
+        feeStructuresList, 
+        eligibleLevels,
+myRegistrations,
+myInvoices,
+canRegister,
+registrationReason,
+currentRegistrationPeriod,
+
       login,
       logout,
       refresh,
@@ -506,6 +585,8 @@ const approveResult = async (id: string) => {
       updateResult,
       approveResult,
       apiRequest,
+fetchProgramsGlobal,
+fetchRegistrationData,
     }}>
       {children}
     </EMISContext.Provider>
