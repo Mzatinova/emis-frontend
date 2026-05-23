@@ -73,8 +73,7 @@ interface EMISState {
   canRegister: boolean;
   registrationReason: string;
   currentRegistrationPeriod: any;
-  
-
+  repeatersList: any[];
   login: (identifier: string, password: string, type: 'staff' | 'student') => Promise<User | null>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -208,6 +207,7 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [sessions, setSessions] = useState<AcademicSession[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [results, setResults] = useState<Result[]>([]);
+  const [repeatersList, setRepeatersList] = useState<any[]>([]);
   const [audits, setAudits] = useState<AuditLog[]>([]);
   const [programsList, setProgramsList] = useState<any[]>([]);
   const [feeStructuresList, setFeeStructuresList] = useState<any[]>([]);
@@ -221,13 +221,14 @@ const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(
 
   const refresh = async () => {
     try {
-      const [usersData, studentsData, sessionsData, coursesData, resultsData, auditsData, programsData, feeStructuresData] = await Promise.all([
+      const [usersData, studentsData, sessionsData, coursesData, resultsData, repeatersData, auditsData, programsData, feeStructuresData] = await Promise.all([
         apiRequest('/users').catch(() => ({ data: [] })),
         apiRequest('/students').catch(() => ({ data: [] })),
         apiRequest('/sessions').catch(() => ({ data: [] })),
         apiRequest('/courses').catch(() => ({ data: [] })),
         // apiRequest('/results/student').catch(() => ({ data: [] })),
         apiRequest('/results/all').catch(() => ({ data: [] })),
+        apiRequest('/results/repeaters').catch(() => ({ data: [] })),
         apiRequest('/audits').catch(() => ({ data: [] })),
         apiRequest('/programs').catch(() => ({ data: [] })), 
         apiRequest('/fee-structures').catch(() => ({ data: [] })),
@@ -254,6 +255,7 @@ const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(
     }));
     setResults(mappedResults);
 }
+if (repeatersData.data) setRepeatersList(repeatersData.data);
       // if (resultsData.data) setResults(resultsData.data);
       if (auditsData.data) setAudits(auditsData.data);
       if (programsData.data) setProgramsList(programsData.data);
@@ -264,6 +266,8 @@ const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(
 
     
   };
+
+  
 
   const fetchProgramsGlobal = async () => {
     try {
@@ -569,7 +573,7 @@ myInvoices,
 canRegister,
 registrationReason,
 currentRegistrationPeriod,
-
+repeatersList,
       login,
       logout,
       refresh,
