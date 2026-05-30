@@ -16,10 +16,10 @@ const TechnicianDash: React.FC<{ active: string }> = ({ active }) => {
       <div>
         {toast && <Toast message={toast} onClose={() => setToast('')} />}
         <PageHeader title="Technician Dashboard" subtitle="System super admin overview" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <StatCard label="Total Staff" value={users.length} icon={Users} color="bg-purple-600" sub="Including technician" />
           <StatCard label="Total Students" value={students.length} icon={GraduationCap} color="bg-blue-600" />
-          <StatCard label="Total Courses" value={courses.length} icon={BookOpen} color="bg-emerald-600" />
+
           <StatCard label="Audit Entries" value={audits.length} icon={ScrollText} color="bg-amber-600" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

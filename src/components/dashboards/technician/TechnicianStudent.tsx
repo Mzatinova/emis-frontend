@@ -107,7 +107,7 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
 
         setUploading(false);
         setBulkModal(false);
-        setCsvText('name,program,level,email\nJohn Doe,Electrical Engineering,Year 1,john@example.com\nJane Smith,Mechanical Engineering,Year 2,jane@example.com');
+        setCsvText('name,program,level,email\nJohn Nanji,Electrical Engineering,Year 1,john@example.com\nJane Smith,Mechanical Engineering,Year 2,jane@example.com');
         setToast(`Bulk upload complete: ${added} students added, ${failed} failed`);
     };
 
@@ -160,7 +160,7 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
     return (
         <div>
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
-            <PageHeader title="Student Management" subtitle="Create and manage student accounts (Technician responsibility)"
+            <PageHeader title="Student Management" subtitle="Create and manage student accounts"
                 action={
                     <div className="flex gap-2">
                         <Button variant="secondary" onClick={() => setBulkModal(true)}>

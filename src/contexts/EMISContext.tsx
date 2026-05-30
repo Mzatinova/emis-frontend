@@ -235,7 +235,14 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
         apiRequest('/fee-structures').catch(() => ({ data: [] })),
       ]);
 
-      if (usersData.data) setUsers(usersData.data);
+      // if (usersData.data) setUsers(usersData.data);
+      if (usersData.data) {
+        const mappedUsers = usersData.data.map((u: any) => ({
+          ...u,
+          createdAt: u.created_at,
+        }));
+        setUsers(mappedUsers);
+      }
       if (studentsData.data) {
         const mapped = studentsData.data.map((s: any) => ({
           ...s,

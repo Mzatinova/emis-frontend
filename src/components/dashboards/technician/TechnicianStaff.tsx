@@ -36,7 +36,7 @@ export const TechnicianStaff: React.FC<{ toast: string; setToast: (msg: string) 
                         <td className="px-4 py-3 text-slate-600">{u.email}</td>
                         <td className="px-4 py-3"><Badge status={u.role}>{u.role}</Badge></td>
                         <td className="px-4 py-3"><Badge status={u.active ? 'active' : 'inactive'} /></td>
-                        <td className="px-4 py-3 text-slate-500 text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-slate-500 text-xs">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}</td>
                         <td className="px-4 py-3">
                             <div className="flex gap-2">
                                 <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-slate-100 rounded text-slate-600"><Edit2 className="w-4 h-4" /></button>
