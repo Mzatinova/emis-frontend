@@ -39,8 +39,8 @@ export interface Result {
   studentReg: string;
   courseId: string;
   courseName?: string;
-  sessionId: string; 
- marks: number | null;
+  sessionId: string;
+  marks: number | null;
   grade: string;
   status: string;
   level?: number;
@@ -66,8 +66,8 @@ interface EMISState {
   results: Result[];
   audits: AuditLog[];
   programsList: any[];
-   feeStructuresList: any[];
-   eligibleLevels: any[];
+  feeStructuresList: any[];
+  eligibleLevels: any[];
   myRegistrations: any[];
   myInvoices: any[];
   canRegister: boolean;
@@ -86,8 +86,8 @@ interface EMISState {
   updateSession: (id: string, session: Partial<AcademicSession>) => Promise<void>;
   addCourse: (c: Omit<Course, 'id'>) => Promise<void>;
   addResult: (r: any) => Promise<void>;
-updateResult: (id: string, r: any) => Promise<void>;
-approveResult: (id: string) => Promise<void>;
+  updateResult: (id: string, r: any) => Promise<void>;
+  approveResult: (id: string) => Promise<void>;
   apiRequest: (endpoint: string, method?: string, body?: any) => Promise<any>;
   fetchProgramsGlobal: () => Promise<void>;
   fetchRegistrationData: (studentId: string) => Promise<void>;
@@ -95,7 +95,8 @@ approveResult: (id: string) => Promise<void>;
 
 const EMISContext = createContext<EMISState | undefined>(undefined);
 
-const API_BASE = 'http://localhost:8000/api';
+// const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'https://emis-backend.onrender.com/api';
 
 const getToken = () => localStorage.getItem('api_token');
 
@@ -134,7 +135,7 @@ const getToken = () => localStorage.getItem('api_token');
 const apiRequest = async (endpoint: string, method: string = 'GET', body?: any) => {
   const token = getToken();
   console.log(`[apiRequest] ${method} ${endpoint} - Token:`, token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
-  
+
   const headers: any = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -212,12 +213,12 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [programsList, setProgramsList] = useState<any[]>([]);
   const [feeStructuresList, setFeeStructuresList] = useState<any[]>([]);
   // Add states
-const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
-const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
-const [myInvoices, setMyInvoices] = useState<any[]>([]);
-const [canRegister, setCanRegister] = useState(false);
-const [registrationReason, setRegistrationReason] = useState('');
-const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(null);
+  const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
+  const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
+  const [myInvoices, setMyInvoices] = useState<any[]>([]);
+  const [canRegister, setCanRegister] = useState(false);
+  const [registrationReason, setRegistrationReason] = useState('');
+  const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(null);
 
   const refresh = async () => {
     try {
@@ -230,7 +231,7 @@ const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(
         apiRequest('/results/all').catch(() => ({ data: [] })),
         apiRequest('/results/repeaters').catch(() => ({ data: [] })),
         apiRequest('/audits').catch(() => ({ data: [] })),
-        apiRequest('/programs').catch(() => ({ data: [] })), 
+        apiRequest('/programs').catch(() => ({ data: [] })),
         apiRequest('/fee-structures').catch(() => ({ data: [] })),
       ]);
 
@@ -246,62 +247,62 @@ const [currentRegistrationPeriod, setCurrentRegistrationPeriod] = useState<any>(
       }
       if (sessionsData.data) setSessions(sessionsData.data);
       if (coursesData.data) setCourses(coursesData.data);
- if (resultsData.data) {
-    console.log('Results fetched and set:', resultsData.data);
-    const mappedResults = resultsData.data.map((r: any) => ({
-        ...r,
-        courseName: r.course_name,
-        studentId: r.student_id,
-    }));
-    setResults(mappedResults);
-}
-if (repeatersData.data) setRepeatersList(repeatersData.data);
+      if (resultsData.data) {
+        console.log('Results fetched and set:', resultsData.data);
+        const mappedResults = resultsData.data.map((r: any) => ({
+          ...r,
+          courseName: r.course_name,
+          studentId: r.student_id,
+        }));
+        setResults(mappedResults);
+      }
+      if (repeatersData.data) setRepeatersList(repeatersData.data);
       // if (resultsData.data) setResults(resultsData.data);
       if (auditsData.data) setAudits(auditsData.data);
       if (programsData.data) setProgramsList(programsData.data);
-      if (feeStructuresData.data) setFeeStructuresList(feeStructuresData.data); 
+      if (feeStructuresData.data) setFeeStructuresList(feeStructuresData.data);
     } catch (error) {
       console.error('Refresh error:', error);
     }
 
-    
+
   };
 
-  
+
 
   const fetchProgramsGlobal = async () => {
     try {
-        const response = await apiRequest('/programs');
-        if (response.data) {
-            setProgramsList(response.data);
-        }
+      const response = await apiRequest('/programs');
+      if (response.data) {
+        setProgramsList(response.data);
+      }
     } catch (error) {
-        console.error('Failed to fetch programs:', error);
+      console.error('Failed to fetch programs:', error);
     }
-};
+  };
 
-// Add fetch function
-const fetchRegistrationData = async (studentId: string) => {
+  // Add fetch function
+  const fetchRegistrationData = async (studentId: string) => {
     try {
-        const [periodRes, eligibleRes, canRegisterRes, registrationsRes, invoicesRes] = await Promise.all([
-            apiRequest('/registration/period'),
-            apiRequest(`/registration/eligible-levels/${studentId}`),
-            apiRequest(`/registration/can-register/${studentId}`),
-            apiRequest(`/registration/my-registrations/${studentId}`),
-            apiRequest(`/registration/my-invoices/${studentId}`)
-        ]);
-        if (periodRes.data) setCurrentRegistrationPeriod(periodRes.data);
-        if (eligibleRes.data) setEligibleLevels(eligibleRes.data);
-        if (canRegisterRes.data) {
-            setCanRegister(canRegisterRes.data.canRegister);
-            setRegistrationReason(canRegisterRes.data.reason || '');
-        }
-        if (registrationsRes.data) setMyRegistrations(registrationsRes.data);
-        if (invoicesRes.data) setMyInvoices(invoicesRes.data);
+      const [periodRes, eligibleRes, canRegisterRes, registrationsRes, invoicesRes] = await Promise.all([
+        apiRequest('/registration/period'),
+        apiRequest(`/registration/eligible-levels/${studentId}`),
+        apiRequest(`/registration/can-register/${studentId}`),
+        apiRequest(`/registration/my-registrations/${studentId}`),
+        apiRequest(`/registration/my-invoices/${studentId}`)
+      ]);
+      if (periodRes.data) setCurrentRegistrationPeriod(periodRes.data);
+      if (eligibleRes.data) setEligibleLevels(eligibleRes.data);
+      if (canRegisterRes.data) {
+        setCanRegister(canRegisterRes.data.canRegister);
+        setRegistrationReason(canRegisterRes.data.reason || '');
+      }
+      if (registrationsRes.data) setMyRegistrations(registrationsRes.data);
+      if (invoicesRes.data) setMyInvoices(invoicesRes.data);
     } catch (error) {
-        console.error('Failed to fetch registration data:', error);
+      console.error('Failed to fetch registration data:', error);
     }
-};
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -309,15 +310,15 @@ const fetchRegistrationData = async (studentId: string) => {
       const savedUser = localStorage.getItem('emis_user');
       const savedToken = localStorage.getItem('api_token');
 
-            if (savedUser && savedToken) {
+      if (savedUser && savedToken) {
         try {
           const user = JSON.parse(savedUser);
-    setCurrentUser(user);
+          setCurrentUser(user);
           // setCurrentUser(JSON.parse(savedUser));
           await refresh();  // Only this line - wait for data to load
           //  await fetchRegistrationData(user.id); 
           if (user.role === 'student') {
-    await fetchRegistrationData(user.id);
+            await fetchRegistrationData(user.id);
           }
         } catch (e) {
           console.error('Restore session error:', e);
@@ -373,7 +374,7 @@ const fetchRegistrationData = async (studentId: string) => {
 
       const data = await response.json();
 
-            if (data.success) {
+      if (data.success) {
         const user: User = {
           id: data.user.id,
           name: data.user.name,
@@ -389,32 +390,32 @@ const fetchRegistrationData = async (studentId: string) => {
         await refresh();     // Wait for data to load first
         // await fetchRegistrationData(user.id);
         if (user.role === 'student') {
-    await fetchRegistrationData(user.id);
-}
+          await fetchRegistrationData(user.id);
+        }
         setLoading(false);   // Then set loading to false
         return user;
       }
 
-  //     if (data.success) {
-  //       const user: User = {
-  //         id: data.user.id,
-  //         name: data.user.name,
-  //         email: data.user.email,
-  //         role: data.user.role || (type === 'student' ? 'student' : 'staff'),
-  //         active: true,
-  //         createdAt: new Date().toISOString(),
-  //         regNumber: data.user.reg_number,
-  //         program: data.user.program,  // Add this line
-  //   level: data.user.level       // Add this line
-  //       };
-  //       persistUser(user, data.token);
-  //       // Show UI immediately
-  // // setLoading(false);
-  // // Load data in background
-  // refresh();
-  //       // await refresh();
-  //       return user;
-  //     }
+      //     if (data.success) {
+      //       const user: User = {
+      //         id: data.user.id,
+      //         name: data.user.name,
+      //         email: data.user.email,
+      //         role: data.user.role || (type === 'student' ? 'student' : 'staff'),
+      //         active: true,
+      //         createdAt: new Date().toISOString(),
+      //         regNumber: data.user.reg_number,
+      //         program: data.user.program,  // Add this line
+      //   level: data.user.level       // Add this line
+      //       };
+      //       persistUser(user, data.token);
+      //       // Show UI immediately
+      // // setLoading(false);
+      // // Load data in background
+      // refresh();
+      //       // await refresh();
+      //       return user;
+      //     }
       return null;
     } catch (error) {
       console.error('Login error:', error);
@@ -423,16 +424,16 @@ const fetchRegistrationData = async (studentId: string) => {
   };
 
   const logout = async () => {
-  // Clear local data immediately (makes logout instant)
-  persistUser(null);
-  
-  // Call API in background (don't wait)
-  try {
-    await apiRequest('/logout', 'POST');
-  } catch (error) {
-    console.error('Logout error:', error);
-  }
-};
+    // Clear local data immediately (makes logout instant)
+    persistUser(null);
+
+    // Call API in background (don't wait)
+    try {
+      await apiRequest('/logout', 'POST');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   // const logout = async () => {
   //   try {
@@ -504,56 +505,56 @@ const fetchRegistrationData = async (studentId: string) => {
   };
 
   const addResult = async (r: any) => {
-  const data = await apiRequest('/results', 'POST', r);
-  if (data.data) {
-    setResults(prev => [...prev, data.data]);
-  }
-};
+    const data = await apiRequest('/results', 'POST', r);
+    if (data.data) {
+      setResults(prev => [...prev, data.data]);
+    }
+  };
 
-// const updateResult = async (id: string, r: any) => {
-//   const data = await apiRequest(`/results/${id}`, 'PUT', r);
-//   if (data.data) {
-//     setResults(prev => prev.map(res => res.id === id ? data.data : res));
-//   }
-// };
+  // const updateResult = async (id: string, r: any) => {
+  //   const data = await apiRequest(`/results/${id}`, 'PUT', r);
+  //   if (data.data) {
+  //     setResults(prev => prev.map(res => res.id === id ? data.data : res));
+  //   }
+  // };
 
-const updateResult = async (id: string, r: any) => {
+  const updateResult = async (id: string, r: any) => {
     const data = await apiRequest(`/results/${id}`, 'PUT', r);
     if (data.data) {
-        const mappedResult = {
-            ...data.data,
-            courseName: data.data.course_name,
-            studentId: data.data.student_id,
-            marks: data.data.marks,
-            grade: data.data.grade,
-            status: data.data.status
-        };
-        setResults(prev => prev.map(res => res.id === id ? mappedResult : res));
+      const mappedResult = {
+        ...data.data,
+        courseName: data.data.course_name,
+        studentId: data.data.student_id,
+        marks: data.data.marks,
+        grade: data.data.grade,
+        status: data.data.status
+      };
+      setResults(prev => prev.map(res => res.id === id ? mappedResult : res));
     }
-};
+  };
 
-// const approveResult = async (id: string) => {
-//     const data = await apiRequest(`/results/${id}/publish`, 'POST');
-//     if (data.data) {
-//         setResults(prev => prev.map(r => r.id === id ? data.data : r));
-//     }
-// };
+  // const approveResult = async (id: string) => {
+  //     const data = await apiRequest(`/results/${id}/publish`, 'POST');
+  //     if (data.data) {
+  //         setResults(prev => prev.map(r => r.id === id ? data.data : r));
+  //     }
+  // };
 
-const approveResult = async (id: string) => {
+  const approveResult = async (id: string) => {
     const data = await apiRequest(`/results/${id}/publish`, 'POST');
     if (data.data) {
-        // Map the response to match your Result interface
-        const mappedResult = {
-            ...data.data,
-            courseName: data.data.course_name,
-            studentId: data.data.student_id,
-            marks: data.data.marks,
-            grade: data.data.grade,
-            status: data.data.status
-        };
-        setResults(prev => prev.map(r => r.id === id ? mappedResult : r));
+      // Map the response to match your Result interface
+      const mappedResult = {
+        ...data.data,
+        courseName: data.data.course_name,
+        studentId: data.data.student_id,
+        marks: data.data.marks,
+        grade: data.data.grade,
+        status: data.data.status
+      };
+      setResults(prev => prev.map(r => r.id === id ? mappedResult : r));
     }
-};
+  };
 
   return (
     <EMISContext.Provider value={{
@@ -565,15 +566,15 @@ const approveResult = async (id: string) => {
       courses,
       results,
       audits,
-        programsList,
-        feeStructuresList, 
-        eligibleLevels,
-myRegistrations,
-myInvoices,
-canRegister,
-registrationReason,
-currentRegistrationPeriod,
-repeatersList,
+      programsList,
+      feeStructuresList,
+      eligibleLevels,
+      myRegistrations,
+      myInvoices,
+      canRegister,
+      registrationReason,
+      currentRegistrationPeriod,
+      repeatersList,
       login,
       logout,
       refresh,
@@ -589,8 +590,8 @@ repeatersList,
       updateResult,
       approveResult,
       apiRequest,
-fetchProgramsGlobal,
-fetchRegistrationData,
+      fetchProgramsGlobal,
+      fetchRegistrationData,
     }}>
       {children}
     </EMISContext.Provider>
