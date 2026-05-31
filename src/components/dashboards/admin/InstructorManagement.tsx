@@ -22,8 +22,8 @@ interface InstructorManagementProps {
 }
 
 const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setToast }) => {
-//    const { users, courses, apiRequest } = useEMIS();
-const { users, courses, apiRequest, programsList, fetchProgramsGlobal } = useEMIS();
+    //    const { users, courses, apiRequest } = useEMIS();
+    const { users, courses, apiRequest, programsList, fetchProgramsGlobal } = useEMIS();
 
     const [instructorSearch, setInstructorSearch] = useState('');
     const [assignModal, setAssignModal] = useState(false);
@@ -32,19 +32,19 @@ const { users, courses, apiRequest, programsList, fetchProgramsGlobal } = useEMI
     // Load programs from localStorage
     // const [programs, setPrograms] = useState<Program[]>([]);
 
-// useEffect(() => {
-//     const fetchPrograms = async () => {
-//         try {
-//             const response = await apiRequest('/programs');
-//             if (response.data) {
-//                 setPrograms(response.data);
-//             }
-//         } catch (error) {
-//             console.error('Failed to fetch programs:', error);
-//         }
-//     };
-//     fetchPrograms();
-// }, []);
+    // useEffect(() => {
+    //     const fetchPrograms = async () => {
+    //         try {
+    //             const response = await apiRequest('/programs');
+    //             if (response.data) {
+    //                 setPrograms(response.data);
+    //             }
+    //         } catch (error) {
+    //             console.error('Failed to fetch programs:', error);
+    //         }
+    //     };
+    //     fetchPrograms();
+    // }, []);
 
     const instructors = users.filter(u => u.role === 'instructor' && u.active);
 
@@ -79,18 +79,18 @@ const { users, courses, apiRequest, programsList, fetchProgramsGlobal } = useEMI
     // };
 
     const removeInstructorFromAllCourses = async (instructorId: string) => {
-    try {
-        await apiRequest('/instructor/assign', 'POST', {
-            instructorId: instructorId,
-            assignments: []
-        });
-         await fetchProgramsGlobal();
-        setToast(`Removed ${selectedInstructor?.name} from all courses`);
-        setAssignModal(false);
-    } catch (error) {
-        setToast('Failed to remove assignments');
-    }
-};
+        try {
+            await apiRequest('/instructor/assign', 'POST', {
+                instructorId: instructorId,
+                assignments: []
+            });
+            await fetchProgramsGlobal();
+            setToast(`Removed ${selectedInstructor?.name} from all courses`);
+            setAssignModal(false);
+        } catch (error) {
+            setToast('Failed to remove assignments');
+        }
+    };
 
     // Remove instructor from all courses
     // const removeInstructorFromAllCourses = (instructorId: string) => {
@@ -139,41 +139,41 @@ const { users, courses, apiRequest, programsList, fetchProgramsGlobal } = useEMI
         setTempAssignments(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-const saveAssignments = async () => {
-    if (!selectedInstructor) return;
+    const saveAssignments = async () => {
+        if (!selectedInstructor) return;
 
-    const assignments = [];
-    Object.entries(tempAssignments).forEach(([key, isAssigned]) => {
-        if (isAssigned) {
-            const [programId, levelStr, ...courseNameParts] = key.split('-');
-            const level = parseInt(levelStr);
-            const courseName = courseNameParts.join('-');
-            assignments.push({ programId, level, courseName });
-        }
-    });
-    
-
-    try {
-        await apiRequest('/instructor/assign', 'POST', {
-            instructorId: selectedInstructor.id,
-            assignments
+        const assignments = [];
+        Object.entries(tempAssignments).forEach(([key, isAssigned]) => {
+            if (isAssigned) {
+                const [programId, levelStr, ...courseNameParts] = key.split('-');
+                const level = parseInt(levelStr);
+                const courseName = courseNameParts.join('-');
+                assignments.push({ programId, level, courseName });
+            }
         });
-        await fetchProgramsGlobal();
-        setToast(`Assignments saved for ${selectedInstructor.name}`);
-        setAssignModal(false);
-    } catch (error) {
-        setToast('Failed to save assignments');
-    }
-};
 
-if (!programsList || programsList.length === 0) {
-    return (
-        <div className="p-8 text-center flex items-center justify-center gap-2">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Loading programs...</span>
-        </div>
-    );
-}
+
+        try {
+            await apiRequest('/instructor/assign', 'POST', {
+                instructorId: selectedInstructor.id,
+                assignments
+            });
+            await fetchProgramsGlobal();
+            setToast(`Assignments saved for ${selectedInstructor.name}`);
+            setAssignModal(false);
+        } catch (error) {
+            setToast('Failed to save assignments');
+        }
+    };
+
+    if (!programsList || programsList.length === 0) {
+        return (
+            <div className="p-8 text-center flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading programs...</span>
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -200,7 +200,7 @@ if (!programsList || programsList.length === 0) {
                     const assignments = getInstructorAssignments(instructor.id);
                     return (
                         <div key={instructor.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                            <div className="bg-slate-50 px-4 sm:px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                                 <div>
                                     <h3 className="text-lg font-semibold text-slate-900">{instructor.name}</h3>
                                     <p className="text-sm text-slate-500">{instructor.email}</p>
@@ -276,8 +276,8 @@ if (!programsList || programsList.length === 0) {
                                                                     type="button"
                                                                     onClick={() => toggleCourseAssignment(program.id, course.level, course.courseName)}
                                                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-between ${isAssigned
-                                                                            ? 'bg-blue-600 text-white'
-                                                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                                                        ? 'bg-blue-600 text-white'
+                                                                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                                                                         }`}
                                                                 >
                                                                     {course.courseName}
