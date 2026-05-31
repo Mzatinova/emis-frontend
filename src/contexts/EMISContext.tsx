@@ -22,6 +22,8 @@ export interface Student extends User {
 export interface AcademicSession {
   id: string;
   year: string;
+  start_date: string;
+  end_date: string;
   active: boolean;
 }
 

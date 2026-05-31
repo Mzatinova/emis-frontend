@@ -58,7 +58,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
                     value={currentSession ? currentSession.year : 'None'}
                     icon={CalendarDays}
                     color="bg-rose-600"
-
+                    sub={currentSession && currentSession.start_date && currentSession.end_date
+                        ? `${new Date(currentSession.start_date).toLocaleDateString()} - ${new Date(currentSession.end_date).toLocaleDateString()}`
+                        : ''}
                 />
             </div>
 
