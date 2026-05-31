@@ -10,7 +10,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
-    const { students, users, courses, sessions, results, audits } = useEMIS();
+    const { students, users, courses, sessions, results, repeatersList, audits } = useEMIS();
     const { registrations, invoices } = useRegistration();
 
     const instructors = users.filter(u => u.role === 'instructor' && u.active);
@@ -19,13 +19,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
     const currentSession = sessions.find(s => s.active === true);
 
     // Registration stats
-  // Registration stats (using invoices to match AccountsApproval)
-const totalRegisteredStudents = invoices.length;
-const approvedStudents = invoices.filter(i => i.status === 'approved').length;
-const pendingStudents = invoices.filter(i => i.status === 'pending' || i.status === 'paid').length;
+    // Registration stats (using invoices to match AccountsApproval)
+    const totalRegisteredStudents = invoices.length;
+    const approvedStudents = invoices.filter(i => i.status === 'approved').length;
+    const pendingStudents = invoices.filter(i => i.status === 'pending' || i.status === 'paid').length;
 
     // Repeaters (students who registered as repeater - check invoice type)
-    const repeaters = invoices.filter(i => i.type === 'repeater').length;
+    const repeaters = repeatersList.length;
 
     // Results stats
     const publishedExams = results.filter(r => r.status === 'approved').length;
@@ -43,7 +43,7 @@ const pendingStudents = invoices.filter(i => i.status === 'pending' || i.status 
 
             {/* 6 Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-6">
-                
+
                 <StatCard label="Total Students" value={students.length} icon={GraduationCap} color="bg-blue-600" sub={`${students.filter(s => s.active).length} active`} />
 
                 <StatCard label="Total Instructors" value={instructors.length} icon={Users} color="bg-emerald-600" />
@@ -63,7 +63,7 @@ const pendingStudents = invoices.filter(i => i.status === 'pending' || i.status 
             </div>
 
             {/* Pending Approval Alert */}
-         {/* {pendingStudents > 0 && (
+            {/* {pendingStudents > 0 && (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
         <div className="flex items-center gap-3">
             <Clock className="w-5 h-5 text-amber-600" />
