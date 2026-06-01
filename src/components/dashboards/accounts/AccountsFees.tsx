@@ -29,16 +29,26 @@ const AccountsFees: React.FC = () => {
         perCourseAmount: 0
     });
 
+    // const fetchPrograms = async () => {
+    //     try {
+    //         const response = await apiRequest('/programs');
+    //         if (response.data) {
+    //             setPrograms(response.data.map((p: any) => ({ id: p.id, name: p.name })));
+    //         }
+    //     } catch (error) {
+    //         console.error('Failed to fetch programs:', error);
+    //     }
+    // };
     const fetchPrograms = async () => {
-        try {
-            const response = await apiRequest('/programs');
-            if (response.data) {
-                setPrograms(response.data.map((p: any) => ({ id: p.id, name: p.name })));
-            }
-        } catch (error) {
-            console.error('Failed to fetch programs:', error);
+    try {
+        const response = await apiRequest('/programs');
+        if (response.data) {
+            setPrograms(response.data.map((p: any) => ({ id: String(p.id), name: p.name })));
         }
-    };
+    } catch (error) {
+        console.error('Failed to fetch programs:', error);
+    }
+};
 
     useEffect(() => {
         fetchPrograms();
@@ -49,6 +59,7 @@ const AccountsFees: React.FC = () => {
             setToast('Please fill all required fields');
             return;
         }
+        console.log('feeForm before submit:', feeForm);  // ADD THIS LINE
         setSubmitting(true);
         try {
             await apiRequest('/fee-structures', 'POST', {
@@ -172,10 +183,16 @@ const AccountsFees: React.FC = () => {
                     <Field label="Program" required>
                         <Select
                             value={feeForm.programId}
+
                             onChange={e => {
-                                const program = programs.find(p => p.id === e.target.value);
-                                setFeeForm({ ...feeForm, programId: e.target.value, programName: program?.name || '' });
-                            }}
+    const program = programs.find(p => p.id === e.target.value);
+    console.log('Selected program:', program);  // ADD THIS
+    setFeeForm({ ...feeForm, programId: e.target.value, programName: program?.name || '' });
+}}
+                            // onChange={e => {
+                            //     const program = programs.find(p => p.id === e.target.value);
+                            //     setFeeForm({ ...feeForm, programId: e.target.value, programName: program?.name || '' });
+                            // }}
                             disabled={!!editingFee || submitting}
                         >
                             <option value="">Select program</option>
