@@ -49,6 +49,7 @@ const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => vo
             }
         });
     }, [sessions, updateSession]);
+
     const openEditModal = (session: any) => {
         setEditingSession(session);
         setEditYear(session.year);

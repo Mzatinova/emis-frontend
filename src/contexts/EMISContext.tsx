@@ -212,7 +212,8 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [results, setResults] = useState<Result[]>([]);
   const [repeatersList, setRepeatersList] = useState<any[]>([]);
   const [audits, setAudits] = useState<AuditLog[]>([]);
-  const [programsList, setProgramsList] = useState<any[]>([]);
+  // const [programsList, setProgramsList] = useState<any[]>([]);
+  const [programsList, setProgramsList] = useState<any[] | null>(null);
   const [feeStructuresList, setFeeStructuresList] = useState<any[]>([]);
   // Add states
   const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);

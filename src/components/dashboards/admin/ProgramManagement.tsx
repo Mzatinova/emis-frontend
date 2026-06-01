@@ -39,7 +39,7 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
     const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
     const [selectedCourse, setSelectedCourse] = useState<ProgramCourse | null>(null);
     const [selectedLevel, setSelectedLevel] = useState<number>(1);
-    
+
 
     // const fetchPrograms = async () => {
     //     setLoading(true);
@@ -182,14 +182,22 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
     //         </div>
     //     );
     // }
-if (programsList.length === 0) {
-    return (
-        <div className="p-8 text-center flex items-center justify-center gap-2">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Loading programs...</span>
-        </div>
-    );
-}
+    if (!programsList) {
+        return (
+            <div className="p-8 text-center flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading programs...</span>
+            </div>
+        );
+    }
+
+    if (programsList.length === 0) {
+        return (
+            <div className="col-span-full text-center py-12 text-slate-500">
+                No programs found. Click "New Program" to create one.
+            </div>
+        );
+    }
     return (
         <div>
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
@@ -204,7 +212,7 @@ if (programsList.length === 0) {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {programsList.length=== 0 ? (
+                {programsList.length === 0 ? (
                     <div className="col-span-full text-center py-12 text-slate-500">
                         No programs found. Click "New Program" to create one.
                     </div>
