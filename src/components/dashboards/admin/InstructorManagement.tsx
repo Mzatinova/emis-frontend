@@ -166,11 +166,19 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
         }
     };
 
-    if (!programsList || programsList.length === 0) {
+    if (!programsList) {
         return (
             <div className="p-8 text-center flex items-center justify-center gap-2">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Loading programs...</span>
+            </div>
+        );
+    }
+
+    if (programsList.length === 0) {
+        return (
+            <div className="p-8 text-center">
+                <p className="text-slate-500">No programs found. Please create a program first.</p>
             </div>
         );
     }

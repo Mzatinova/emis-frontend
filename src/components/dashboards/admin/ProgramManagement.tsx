@@ -191,13 +191,6 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
         );
     }
 
-    if (programsList.length === 0) {
-        return (
-            <div className="col-span-full text-center py-12 text-slate-500">
-                No programs found. Click "New Program" to create one.
-            </div>
-        );
-    }
     return (
         <div>
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
@@ -210,9 +203,8 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
                     </Button>
                 }
             />
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {programsList.length === 0 ? (
+                {programsList.length === 0 && programsList !== null ? (
                     <div className="col-span-full text-center py-12 text-slate-500">
                         No programs found. Click "New Program" to create one.
                     </div>
