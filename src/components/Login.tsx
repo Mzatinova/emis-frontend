@@ -20,14 +20,14 @@ const Login: React.FC = () => {
         if (!result) setError('Invalid credentials or inactive account');
     };
 
-    const fillDemo = (type: 'tech' | 'admin' | 'inst' | 'acc' | 'stu') => {
-        if (type === 'stu') { setTab('student'); setIdentifier('TC/2025/001'); setPassword('student123'); return; }
-        setTab('staff');
-        if (type === 'tech') { setIdentifier('tech@emis.edu'); setPassword('tech123'); }
-        if (type === 'admin') { setIdentifier('admin@emis.edu'); setPassword('admin123'); }
-        if (type === 'inst') { setIdentifier('instructor@emis.edu'); setPassword('inst123'); }
-        if (type === 'acc') { setIdentifier('accounts@emis.edu'); setPassword('acc123'); }
-    };
+    // const fillDemo = (type: 'tech' | 'admin' | 'inst' | 'acc' | 'stu') => {
+    //     if (type === 'stu') { setTab('student'); setIdentifier('TC/2025/001'); setPassword('student123'); return; }
+    //     setTab('staff');
+    //     if (type === 'tech') { setIdentifier('tech@emis.edu'); setPassword('tech123'); }
+    //     if (type === 'admin') { setIdentifier('admin@emis.edu'); setPassword('admin123'); }
+    //     if (type === 'inst') { setIdentifier('instructor@emis.edu'); setPassword('inst123'); }
+    //     if (type === 'acc') { setIdentifier('accounts@emis.edu'); setPassword('acc123'); }
+    // };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
@@ -44,7 +44,7 @@ const Login: React.FC = () => {
                             <GraduationCap className="w-10 h-10 text-emerald-300" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold">EMIS</h1>
+                            <h1 className="text-4xl font-bold">Kasama Community Technical College</h1>
                             <p className="text-indigo-200 text-sm">Examination Management Information System</p>
                         </div>
                     </div>
@@ -126,7 +126,7 @@ const Login: React.FC = () => {
                         </button>
                     </form>
 
-                    <div className="mt-6 pt-6 border-t border-slate-200">
+                    {/* <div className="mt-6 pt-6 border-t border-slate-200">
                         <p className="text-xs text-slate-500 mb-2 font-medium">Quick access (demo):</p>
                         <div className="grid grid-cols-3 gap-2">
                             <button onClick={() => fillDemo('tech')} className="text-xs px-2 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded transition">Technician</button>
@@ -135,7 +135,7 @@ const Login: React.FC = () => {
                             <button onClick={() => fillDemo('acc')} className="text-xs px-2 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded transition">Accounts</button>
                             <button onClick={() => fillDemo('stu')} className="text-xs px-2 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded transition col-span-2">Student</button>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
@@ -147,7 +147,7 @@ const Login: React.FC = () => {
                             <GraduationCap className="w-10 h-10 text-emerald-300" />
                         </div>
                     </div>
-                    <h1 className="text-3xl font-bold text-white">EMIS</h1>
+                    <h1 className="text-3xl font-bold text-white">Kasama Community Technical College</h1>
                     <p className="text-indigo-200 text-sm">Examination Management Information System</p>
                     <h2 className="text-xl font-bold leading-tight text-white mt-3">
                         Streamline <span className="bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent">Academic Excellence</span>
@@ -223,7 +223,7 @@ const Login: React.FC = () => {
                         </button>
                     </form>
 
-                    <div className="mt-6 pt-5 border-t border-slate-200">
+                    {/* <div className="mt-6 pt-5 border-t border-slate-200">
                         <p className="text-xs text-slate-500 mb-2 font-medium text-center">Quick access (demo):</p>
                         <div className="flex flex-col items-center gap-2">
                             <button
@@ -262,7 +262,7 @@ const Login: React.FC = () => {
                                 Student
                             </button>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>
