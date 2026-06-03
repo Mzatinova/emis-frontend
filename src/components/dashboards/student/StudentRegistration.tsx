@@ -324,6 +324,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                 {/* Levels Card */}
                 {/* <div className="bg-white border border-slate-200 rounded-xl"> */}
                 {myRegistrations.some(reg => reg.registration_status === 'pending') ? (
+
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
                         <div className="flex flex-col items-center gap-2">
                             <Clock className="w-8 h-8 text-amber-600" />
@@ -332,6 +333,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                         </div>
                     </div>
                 ) : (
+
                     <div className="bg-white border border-slate-200 rounded-xl">
                         <div className="border-b border-slate-200 px-6 py-4">
                             <h3 className="font-semibold text-slate-900">Available Registration Options</h3>

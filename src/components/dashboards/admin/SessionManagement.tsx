@@ -41,13 +41,25 @@ const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => vo
         setToast('Session created');
     };
 
+    // useEffect(() => {
+    //     const today = new Date();
+    //     sessions.forEach(session => {
+    //         if (session.active && session.end_date && new Date(session.end_date) < today) {
+    //             updateSession(session.id, { active: false });
+    //         }
+    //     });
+    // }, [sessions, updateSession]);
+
     useEffect(() => {
         const today = new Date();
-        sessions.forEach(session => {
-            if (session.active && session.end_date && new Date(session.end_date) < today) {
-                updateSession(session.id, { active: false });
+        const checkAndEndSessions = async () => {
+            for (const session of sessions) {
+                if (session.active && session.end_date && new Date(session.end_date) < today) {
+                    await updateSession(session.id, { active: false });
+                }
             }
-        });
+        };
+        checkAndEndSessions();
     }, [sessions, updateSession]);
 
     const openEditModal = (session: any) => {

@@ -11,63 +11,71 @@ interface InstructorClassesProps {
 }
 
 const InstructorClasses: React.FC<InstructorClassesProps> = ({ toast, setToast, myAssignedCourses }) => {
-    const { students } = useEMIS();
+    const { students, sessions } = useEMIS();
     const [selectedClass, setSelectedClass] = useState<any>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const { registrations } = useRegistration();
 
+    const activeSession = sessions.find(s => s.active === true);
+
     // Group assigned courses into boxes
     const assignedBoxes = useMemo(() => {
-        return myAssignedCourses.map(course => ({
-            id: `${course.courseName}-${course.level}`,
-            courseName: course.courseName,
-            level: course.level,
-            programName: course.programName,
-            fullName: `${course.courseName} - Level ${course.level}`
-        }));
-    }, [myAssignedCourses]);
+        if (!activeSession) return [];
+
+        console.log('myAssignedCourses:', myAssignedCourses);
+        console.log('activeSession.id:', activeSession.id);
+        console.log('registrations with session 11:', registrations.filter(r => r.academic_session_id === 11));
+
+
+        return myAssignedCourses
+            .map(course => ({
+                id: `${course.courseName}-${course.level}`,
+                courseName: course.courseName,
+                level: course.level,
+                programName: course.programName,
+                fullName: `${course.courseName} - Level ${course.level}`
+            }))
+            .filter(box => {
+                // Check if there are any students with approved registration for this course in the active session
+                return students.some(s => {
+                    return registrations.some(r =>
+                        String(r.studentId) === String(s.id) &&
+                        r.registrationStatus === 'approved' &&
+                        String(r.programName) === String(box.programName) &&
+                        String(r.level) === String(box.level) &&
+                        r.courses?.includes(box.courseName) &&
+                        String(r.academic_session_id) === String(activeSession.id)
+                    );
+                });
+            });
+    }, [myAssignedCourses, students, registrations, activeSession]);
+    // const assignedBoxes = useMemo(() => {
+    //     return myAssignedCourses.map(course => ({
+    //         id: `${course.courseName}-${course.level}`,
+    //         courseName: course.courseName,
+    //         level: course.level,
+    //         programName: course.programName,
+    //         fullName: `${course.courseName} - Level ${course.level}`
+    //     }));
+    // }, [myAssignedCourses]);
 
     // Get students for selected class
 
     const studentsInClass = useMemo(() => {
-    if (!selectedClass) return [];
+        if (!selectedClass) return [];
 
-    return students.filter(s => {
-        const hasApprovedRegistration = registrations.some(r => 
-            String(r.studentId) === String(s.id) &&
-            r.registrationStatus === 'approved' &&
-            String(r.programName) === String(selectedClass.programName) &&
-            String(r.level) === String(selectedClass.level) &&
-            r.courses?.includes(selectedClass.courseName)
-        );
-        return s.active && hasApprovedRegistration;
-    });
-}, [selectedClass, students, registrations]);
-//     const studentsInClass = useMemo(() => {
-//     if (!selectedClass) return [];
+        return students.filter(s => {
+            const hasApprovedRegistration = registrations.some(r =>
+                String(r.studentId) === String(s.id) &&
+                r.registrationStatus === 'approved' &&
+                String(r.programName) === String(selectedClass.programName) &&
+                String(r.level) === String(selectedClass.level) &&
+                r.courses?.includes(selectedClass.courseName)
+            );
+            return s.active && hasApprovedRegistration;
+        });
+    }, [selectedClass, students, registrations]);
 
-//     return students.filter(s => {
-//         const hasApprovedRegistration = registrations.some(r => 
-//             r.studentId === s.id &&
-//             r.registrationStatus === 'approved' &&
-//             r.programName === selectedClass.programName &&
-//             r.level === selectedClass.level &&
-//             r.courses?.includes(selectedClass.courseName)
-//         );
-//         return s.active && hasApprovedRegistration;
-//     });
-// }, [selectedClass, students, registrations]);
-
-
-    // const studentsInClass = useMemo(() => {
-    //     if (!selectedClass) return [];
-
-    //     return students.filter(s =>
-    //         s.active &&
-    //         s.program === selectedClass.programName &&
-    //         s.level === `Year ${selectedClass.level}`
-    //     );
-    // }, [selectedClass, students]);
 
     const filteredStudents = studentsInClass.filter(s =>
         !searchTerm ||
@@ -112,17 +120,17 @@ const InstructorClasses: React.FC<InstructorClassesProps> = ({ toast, setToast, 
                     </div>
                 ) : (
                     <Table headers={['Reg Number', 'Name', 'Program', 'Level', 'Course', 'Status']} rowCount={filteredStudents.length}>
-    {filteredStudents.map(s => (
-        <tr key={s.id} className="hover:bg-slate-50">
-            <td className="px-4 py-3 font-mono text-xs text-blue-700">{s.regNumber}</td>
-            <td className="px-4 py-3 font-medium">{s.name}</td>
-            <td className="px-4 py-3 text-slate-600">{s.program || '—'}</td>
-            <td className="px-4 py-3 text-slate-600">{s.level || '—'}</td>
-            <td className="px-4 py-3 text-slate-600">{selectedClass?.courseName || '—'}</td>
-            <td className="px-4 py-3"><Badge status={s.active ? 'active' : 'inactive'} /></td>
-        </tr>
-    ))}
-</Table>
+                        {filteredStudents.map(s => (
+                            <tr key={s.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-mono text-xs text-blue-700">{s.regNumber}</td>
+                                <td className="px-4 py-3 font-medium">{s.name}</td>
+                                <td className="px-4 py-3 text-slate-600">{s.program || '—'}</td>
+                                <td className="px-4 py-3 text-slate-600">{s.level || '—'}</td>
+                                <td className="px-4 py-3 text-slate-600">{selectedClass?.courseName || '—'}</td>
+                                <td className="px-4 py-3"><Badge status={s.active ? 'active' : 'inactive'} /></td>
+                            </tr>
+                        ))}
+                    </Table>
                     // <Table headers={['Reg Number', 'Name', 'Program', 'Level', 'Status']} rowCount={filteredStudents.length}>
                     //     {filteredStudents.map(s => (
                     //         <tr key={s.id} className="hover:bg-slate-50">

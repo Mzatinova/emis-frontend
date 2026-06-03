@@ -53,6 +53,7 @@ export interface StudentRegistration {
     registrationStatus: 'pending' | 'approved' | 'rejected';
     approvedAt?: string;
     registeredAt: string;
+    academic_session_id?: number;
 }
 
 export interface StudentProgress {
@@ -68,8 +69,8 @@ export interface StudentProgress {
 
 interface RegistrationState {
     feeStructures: FeeStructure[];
-        feeStructuresList: any[];
-  
+    feeStructuresList: any[];
+
     registrationPeriods: RegistrationPeriod[];
     invoices: Invoice[];
     fetchInstructorRegistrations: () => Promise<void>;
@@ -99,7 +100,7 @@ interface RegistrationState {
     getPendingInvoices: () => Invoice[];
     getAllRegistrations: () => StudentRegistration[];
     fetchInvoices: () => Promise<void>;
-      fetchFeeStructuresGlobal: () => Promise<void>;
+    fetchFeeStructuresGlobal: () => Promise<void>;
 }
 
 const RegistrationContext = createContext<RegistrationState | undefined>(undefined);
@@ -112,7 +113,7 @@ export const useRegistration = () => {
 
 export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { apiRequest } = useEMIS();
-    
+
     const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
     const [registrationPeriods, setRegistrationPeriods] = useState<RegistrationPeriod[]>([]);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -133,63 +134,63 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
     };
     const fetchFeeStructuresGlobal = async () => {
-    try {
-        const response = await apiRequest('/fee-structures');
-        if (response.data) {
-            setFeeStructuresList(response.data);
+        try {
+            const response = await apiRequest('/fee-structures');
+            if (response.data) {
+                setFeeStructuresList(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch fee structures:', error);
         }
-    } catch (error) {
-        console.error('Failed to fetch fee structures:', error);
-    }
-};
+    };
 
     const fetchInstructorRegistrations = async () => {
-    console.log('fetchInstructorRegistrations called');
-    try {
-        const response = await apiRequest('/instructor/registrations');
-        console.log('Response:', response);
-        if (response.data) {
-            setRegistrations(response.data);
+        console.log('fetchInstructorRegistrations called');
+        try {
+            const response = await apiRequest('/instructor/registrations');
+            console.log('Response:', response);
+            if (response.data) {
+                setRegistrations(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch instructor registrations:', error);
         }
-    } catch (error) {
-        console.error('Failed to fetch instructor registrations:', error);
-    }
-};
+    };
 
-//     const fetchInstructorRegistrations = async () => {
-//     try {
-//         const response = await apiRequest('/instructor/registrations');
-//         if (response.data) {
-//             setRegistrations(response.data);
-//         }
-//     } catch (error) {
-//         console.error('Failed to fetch instructor registrations:', error);
-//     }
-// };
+    //     const fetchInstructorRegistrations = async () => {
+    //     try {
+    //         const response = await apiRequest('/instructor/registrations');
+    //         if (response.data) {
+    //             setRegistrations(response.data);
+    //         }
+    //     } catch (error) {
+    //         console.error('Failed to fetch instructor registrations:', error);
+    //     }
+    // };
 
     // Load data from localStorage and backend
     useEffect(() => {
-    const loadData = async () => {
-        const savedFeeStructures = localStorage.getItem('emis_fee_structures');
-        const savedPeriods = localStorage.getItem('emis_registration_periods');
-        const savedProgress = localStorage.getItem('emis_student_progress');
+        const loadData = async () => {
+            const savedFeeStructures = localStorage.getItem('emis_fee_structures');
+            const savedPeriods = localStorage.getItem('emis_registration_periods');
+            const savedProgress = localStorage.getItem('emis_student_progress');
 
-        if (savedFeeStructures) setFeeStructures(JSON.parse(savedFeeStructures));
-        if (savedPeriods) setRegistrationPeriods(JSON.parse(savedPeriods));
-        if (savedProgress) setStudentProgress(JSON.parse(savedProgress));
-        
-        // Fetch invoices from backend
-        await fetchInvoices();
-        // Add this line
-    await fetchFeeStructuresGlobal();
-        
-        // Fetch registrations from backend for instructor
-        await fetchInstructorRegistrations();
-        
-        setLoading(false);
-    };
-    loadData();
-}, []);
+            if (savedFeeStructures) setFeeStructures(JSON.parse(savedFeeStructures));
+            if (savedPeriods) setRegistrationPeriods(JSON.parse(savedPeriods));
+            if (savedProgress) setStudentProgress(JSON.parse(savedProgress));
+
+            // Fetch invoices from backend
+            await fetchInvoices();
+            // Add this line
+            await fetchFeeStructuresGlobal();
+
+            // Fetch registrations from backend for instructor
+            await fetchInstructorRegistrations();
+
+            setLoading(false);
+        };
+        loadData();
+    }, []);
     // useEffect(() => {
     //     const loadData = async () => {
     //         const savedFeeStructures = localStorage.getItem('emis_fee_structures');
@@ -201,10 +202,10 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     //         if (savedPeriods) setRegistrationPeriods(JSON.parse(savedPeriods));
     //         if (savedRegistrations) setRegistrations(JSON.parse(savedRegistrations));
     //         if (savedProgress) setStudentProgress(JSON.parse(savedProgress));
-            
+
     //         // Fetch invoices from backend
     //         await fetchInvoices();
-            
+
     //         setLoading(false);
     //     };
     //     loadData();
@@ -231,10 +232,10 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     // ADD THIS FUNCTION:
-const saveInvoices = (data: Invoice[]) => {
-    setInvoices(data);
-    localStorage.setItem('emis_invoices', JSON.stringify(data));
-};
+    const saveInvoices = (data: Invoice[]) => {
+        setInvoices(data);
+        localStorage.setItem('emis_invoices', JSON.stringify(data));
+    };
 
     const currentRegistrationPeriod = registrationPeriods.find(p => p.isActive && new Date(p.endDate) > new Date());
 
@@ -302,8 +303,8 @@ const saveInvoices = (data: Invoice[]) => {
 
     const verifyPaymentPhysical = async (invoiceId: string, verifiedBy: string) => {
         try {
-            await apiRequest(`/invoices/${invoiceId}/verify-physical`, 'POST', { 
-                verifier_id: verifiedBy 
+            await apiRequest(`/invoices/${invoiceId}/verify-physical`, 'POST', {
+                verifier_id: verifiedBy
             });
             await fetchInvoices();
         } catch (error) {
@@ -314,11 +315,11 @@ const saveInvoices = (data: Invoice[]) => {
 
     const approveInvoice = async (invoiceId: string, approvedBy: string) => {
         try {
-            await apiRequest(`/invoices/${invoiceId}/approve`, 'POST', { 
-                approver_id: approvedBy 
+            await apiRequest(`/invoices/${invoiceId}/approve`, 'POST', {
+                approver_id: approvedBy
             });
             await fetchInvoices();
-            
+
             // Also update the corresponding registration
             const registration = registrations.find(r => r.invoiceId === invoiceId);
             if (registration) {
@@ -443,9 +444,9 @@ const saveInvoices = (data: Invoice[]) => {
 
     return (
         <RegistrationContext.Provider value={{
-             
+
             feeStructures,
-             feeStructuresList,
+            feeStructuresList,
             registrationPeriods,
             invoices,
             registrations,
@@ -473,8 +474,8 @@ const saveInvoices = (data: Invoice[]) => {
             getPendingInvoices,
             getAllRegistrations,
             fetchInvoices,
-fetchInstructorRegistrations,
-fetchFeeStructuresGlobal,
+            fetchInstructorRegistrations,
+            fetchFeeStructuresGlobal,
         }}>
             {children}
         </RegistrationContext.Provider>

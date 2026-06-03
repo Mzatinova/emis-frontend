@@ -47,6 +47,7 @@ export interface Result {
   status: string;
   level?: number;
   createdAt: string;
+  academic_session_id?: number;
 }
 
 export interface AuditLog {
@@ -500,10 +501,31 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // const updateSession = async (id: string, session: Partial<AcademicSession>) => {
+  //   const data = await apiRequest(`/sessions/${id}`, 'PUT', session);
+  //   if (data.data) {
+  //     setSessions(prev => prev.map(s => s.id === id ? data.data : s));
+  //   }
+  // };
   const updateSession = async (id: string, session: Partial<AcademicSession>) => {
-    const data = await apiRequest(`/sessions/${id}`, 'PUT', session);
-    if (data.data) {
-      setSessions(prev => prev.map(s => s.id === id ? data.data : s));
+    // If we're setting active to false (ending the session)
+    if (session.active === false) {
+      // Call the endSession endpoint
+      const data = await apiRequest(`/sessions/${id}/end`, 'POST');
+      if (data.data) {
+        // Refresh all data after session ends
+        await refresh();
+        if (currentUser?.role === 'student') {
+          await fetchRegistrationData(currentUser.id);
+        }
+        setSessions(prev => prev.map(s => s.id === id ? data.data.session : s));
+      }
+    } else {
+      // Normal update
+      const data = await apiRequest(`/sessions/${id}`, 'PUT', session);
+      if (data.data) {
+        setSessions(prev => prev.map(s => s.id === id ? data.data : s));
+      }
     }
   };
 
