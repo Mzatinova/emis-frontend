@@ -340,8 +340,14 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                             <p className="text-sm text-slate-500">Based on your academic progress</p>
                         </div>
                         <div className="p-4 space-y-3">
-                            {eligibleLevels.length === 0 ? (
+                            {/* {eligibleLevels.length === 0 ? (
                                 <p className="text-center text-slate-500 py-4">No eligible levels found</p>
+                            ) : ( */}
+                            {eligibleLevels.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className="text-slate-500">No registration available at this time</p>
+                                    <p className="text-sm text-slate-400 mt-1">Please wait for the next academic session to open registration.</p>
+                                </div>
                             ) : (
                                 eligibleLevels.map((level: any) => (
                                     <div
