@@ -18,13 +18,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
     // Get current active session
     const currentSession = sessions.find(s => s.active === true);
 
-    // Registration stats
-    // Registration stats (using invoices to match AccountsApproval)
-    const totalRegisteredStudents = invoices.length;
-    const approvedStudents = invoices.filter(i => i.status === 'approved').length;
-    const pendingStudents = invoices.filter(i => i.status === 'pending' || i.status === 'paid').length;
+    // Registration stat
 
-    // Repeaters (students who registered as repeater - check invoice type)
+    const totalRegisteredStudents = registrations.filter(r => String(r.academic_session_id) === String(currentSession?.id)).length;
+    const approvedStudents = registrations.filter(r => String(r.academic_session_id) === String(currentSession?.id) && r.registrationStatus === 'approved').length;
+    const pendingStudents = registrations.filter(r => String(r.academic_session_id) === String(currentSession?.id) && r.registrationStatus === 'pending').length;
     const repeaters = repeatersList.length;
 
     // Results stats
@@ -41,6 +39,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
             <PageHeader title="Administrator Dashboard" subtitle="Manage students, instructors, sessions, and results" />
 
+            {!currentSession && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-amber-600" />
+                        <div>
+                            <p className="font-medium text-amber-800">No Active Academic Session</p>
+                            <p className="text-sm text-amber-600">Please create and activate a new session to start registration.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* 6 Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mb-6">
 

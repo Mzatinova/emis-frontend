@@ -38,6 +38,7 @@ export interface Invoice {
     approvedAt?: string;
     createdAt: string;
     updatedAt: string;
+    academic_session_id?: number;
 }
 
 export interface StudentRegistration {

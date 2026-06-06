@@ -11,7 +11,7 @@ export interface User {
   active: boolean;
   createdAt: string;
   program?: string;
-  level?: string;
+  level?: number;
 }
 
 export interface Student extends User {
@@ -25,12 +25,16 @@ export interface AcademicSession {
   start_date: string;
   end_date: string;
   active: boolean;
+  registration_open?: boolean;
+  registration_start_date?: string;
+  registration_end_date?: string;
 }
 
 export interface Course {
   id: string;
   code: string;
   name: string;
+  level?: number;
   credits: number;
   instructorId: string | null;
 }

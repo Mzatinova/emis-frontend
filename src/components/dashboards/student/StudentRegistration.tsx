@@ -299,20 +299,20 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                     </div>
                     <div className="text-right">
                         <p className="text-sm text-slate-600">Your Status</p>
-                        {registrationReason?.includes('Approved') ? (
+                        {myInvoices.some(inv => inv.status === 'approved' && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
                             <div className="flex items-center gap-2 text-emerald-600">
                                 <CheckCircle className="w-4 h-4" />
-                                <span className="font-medium">{registrationReason}</span>
+                                <span className="font-medium">Approved</span>
                             </div>
-                        ) : canRegister ? (
-                            <div className="flex items-center gap-2 text-emerald-600">
-                                <CheckCircle className="w-4 h-4" />
-                                <span className="font-medium">Eligible to Register</span>
+                        ) : myInvoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+                            <div className="flex items-center gap-2 text-blue-600">
+                                <Clock className="w-4 h-4" />
+                                <span className="font-medium">Pending Approval</span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 text-red-600">
-                                <XCircle className="w-4 h-4" />
-                                <span className="font-medium">{registrationReason || 'Not eligible'}</span>
+                            <div className="flex items-center gap-2 text-amber-600">
+                                <CreditCard className="w-4 h-4" />
+                                <span className="font-medium">Not Registered</span>
                             </div>
                         )}
                     </div>
