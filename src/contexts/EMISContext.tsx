@@ -11,7 +11,7 @@ export interface User {
   active: boolean;
   createdAt: string;
   program?: string;
-  level?: number;
+ level?: string;
 }
 
 export interface Student extends User {

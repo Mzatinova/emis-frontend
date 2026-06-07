@@ -20,9 +20,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ toast, setToast }) => {
 
     // Registration stat
 
-    const totalRegisteredStudents = registrations.filter(r => String(r.academic_session_id) === String(currentSession?.id)).length;
-    const approvedStudents = registrations.filter(r => String(r.academic_session_id) === String(currentSession?.id) && r.registrationStatus === 'approved').length;
-    const pendingStudents = registrations.filter(r => String(r.academic_session_id) === String(currentSession?.id) && r.registrationStatus === 'pending').length;
+    const totalRegisteredStudents = invoices.filter(i => String(i.academic_session_id) === String(currentSession?.id)).length;
+const approvedStudents = invoices.filter(i => String(i.academic_session_id) === String(currentSession?.id) && i.status === 'approved').length;
+const pendingStudents = invoices.filter(i => String(i.academic_session_id) === String(currentSession?.id) && (i.status === 'pending' || i.status === 'paid')).length;
     const repeaters = repeatersList.length;
 
     // Results stats

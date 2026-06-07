@@ -191,7 +191,7 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
                     {new Date(currentSession.start_date).toLocaleDateString()} - {new Date(currentSession.end_date).toLocaleDateString()}
                   </p>
                 )}
-                <p className="text-xs text-slate-400 mt-1">Results will appear after session ends</p>
+                {/* <p className="text-xs text-slate-400 mt-1">Results will appear after session ends</p> */}
               </div>
 
               {/* Courses Progress */}

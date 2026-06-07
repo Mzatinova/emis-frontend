@@ -22,9 +22,18 @@ const InstructorStudents: React.FC<InstructorStudentsProps> = ({
 
     const courseOptions = Object.keys(studentsByCourse);
 
-    const displayStudents = selectedCourse
+      // Get students and deduplicate by ID
+    const rawStudents = selectedCourse
         ? studentsByCourse[selectedCourse] || []
         : Object.values(studentsByCourse).flat();
+    
+    const uniqueMap = new Map();
+    rawStudents.forEach(s => {
+        if (!uniqueMap.has(s.id)) {
+            uniqueMap.set(s.id, s);
+        }
+    });
+    const displayStudents = Array.from(uniqueMap.values());
     return (
         <div>
             {toast && <Toast message={toast} onClose={() => setToast('')} />}

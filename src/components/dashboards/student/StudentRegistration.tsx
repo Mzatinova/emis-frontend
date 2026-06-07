@@ -11,7 +11,7 @@ interface StudentRegistrationProps {
 const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToast }) => {
     // const { currentUser, students, apiRequest } = useEMIS();
     // const { currentUser, students, apiRequest, feeStructuresList } = useEMIS();
-    const { currentUser, students, apiRequest, feeStructuresList, eligibleLevels, myRegistrations, myInvoices, canRegister, registrationReason, currentRegistrationPeriod, fetchRegistrationData } = useEMIS();
+    const { currentUser, students, apiRequest, feeStructuresList, eligibleLevels, myRegistrations, myInvoices, canRegister, registrationReason, currentRegistrationPeriod, fetchRegistrationData, sessions } = useEMIS();
     console.log('feeStructuresList:', feeStructuresList);
     const [loading, setLoading] = useState(false);
     // const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
@@ -86,42 +86,64 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
     // Get fee for selected level from fee_structures table
 
     const getFeeAmount = () => {
-        if (!selectedLevel || !currentStudent?.program) return 0;
+    if (!selectedLevel || !currentStudent?.program) return 0;
 
-        console.log('Looking for fee with:', {
-            program_id: currentStudent.program,
-            level: selectedLevel
-        });
-        console.log('Available fees:', feeStructuresList);
+    // Get current active session
+    const currentSession = sessions.find(s => s.active === true);
+    if (!currentSession) return 0;
 
-        // const fee = feeStructuresList.find(f =>
-        //     f.program_id === currentStudent.program &&
-        //     Number(f.level) === Number(selectedLevel)
-        // );
-        const fee = feeStructuresList.find(f =>
-            f.program_name === currentStudent.program &&
-            Number(f.level) === Number(selectedLevel)
-        );
+    console.log('Looking for fee with:', {
+        program_id: currentStudent.program,
+        level: selectedLevel,
+        session_id: currentSession.id
+    });
+    console.log('Available fees:', feeStructuresList);
 
-        console.log('Found fee:', fee);
+    // Find fee structure for current session
+    const fee = feeStructuresList.find(f =>
+        f.program_name === currentStudent.program &&
+        Number(f.level) === Number(selectedLevel) &&
+        String(f.academic_session_id) === String(currentSession.id)
+    );
 
-        if (!fee) return 0;
+    console.log('Found fee:', fee);
 
-        if (selectedType === 'repeater' && selectedCourses.length > 0) {
-            return selectedCourses.length * Number(fee.per_course_amount);
-        }
-        return Number(fee.full_level_amount);
-    };
+    if (!fee) return 0;
+
+    if (selectedType === 'repeater' && selectedCourses.length > 0) {
+        return selectedCourses.length * Number(fee.per_course_amount);
+    }
+    return Number(fee.full_level_amount);
+};
+
     // const getFeeAmount = () => {
     //     if (!selectedLevel || !currentStudent?.program) return 0;
-    //     const fee = feeStructures.find(f => f.program_id === currentStudent.program && f.level === selectedLevel);
+
+    //     console.log('Looking for fee with:', {
+    //         program_id: currentStudent.program,
+    //         level: selectedLevel
+    //     });
+    //     console.log('Available fees:', feeStructuresList);
+
+    //     // const fee = feeStructuresList.find(f =>
+    //     //     f.program_id === currentStudent.program &&
+    //     //     Number(f.level) === Number(selectedLevel)
+    //     // );
+    //     const fee = feeStructuresList.find(f =>
+    //         f.program_name === currentStudent.program &&
+    //         Number(f.level) === Number(selectedLevel)
+    //     );
+
+    //     console.log('Found fee:', fee);
+
     //     if (!fee) return 0;
 
     //     if (selectedType === 'repeater' && selectedCourses.length > 0) {
-    //         return selectedCourses.length * fee.per_course_amount;
+    //         return selectedCourses.length * Number(fee.per_course_amount);
     //     }
-    //     return fee.full_level_amount;
+    //     return Number(fee.full_level_amount);
     // };
+ 
 
     const handleCourseToggle = (course: string) => {
         if (selectedCourses.includes(course)) {
@@ -323,16 +345,49 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Levels Card */}
                 {/* <div className="bg-white border border-slate-200 rounded-xl"> */}
-                {myRegistrations.some(reg => reg.registration_status === 'pending') ? (
-
+                        {/* {myRegistrations.some(reg => reg.registration_status === 'pending') ? (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+        <div className="flex flex-col items-center gap-2">
+            <Clock className="w-8 h-8 text-amber-600" />
+            <h3 className="font-semibold text-amber-800">Registration Pending</h3>
+            <p className="text-sm text-amber-700">You have a pending registration. Please wait for approval before registering for another level.</p>
+        </div>
+    </div>
+) : ( */}
+                {/* {myRegistrations.some(reg => reg.registration_status === 'pending') ? (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
                         <div className="flex flex-col items-center gap-2">
                             <Clock className="w-8 h-8 text-amber-600" />
                             <h3 className="font-semibold text-amber-800">Registration Pending</h3>
-                            <p className="text-sm text-amber-700">You have a pending registration. Please wait for approval before registering for another level.</p>
+                            <p className="text-sm text-amber-700">You have a pending registration. Please wait for approval.</p>
                         </div>
                     </div>
-                ) : (
+                ) : myRegistrations.some(reg => reg.registration_status === 'approved') ? (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <CheckCircle className="w-8 h-8 text-emerald-600" />
+                            <h3 className="font-semibold text-emerald-800">Registration Approved</h3>
+                            <p className="text-sm text-emerald-700">Your registration has been approved.</p>
+                        </div>
+                    </div>
+                ) : ( */}
+        {myRegistrations.some(reg => reg.registration_status === 'pending' && String(reg.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+        <div className="flex flex-col items-center gap-2">
+            <Clock className="w-8 h-8 text-amber-600" />
+            <h3 className="font-semibold text-amber-800">Registration Pending</h3>
+            <p className="text-sm text-amber-700">You have a pending registration. Please wait for approval.</p>
+        </div>
+    </div>
+) : myRegistrations.some(reg => reg.registration_status === 'approved' && String(reg.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
+        <div className="flex flex-col items-center gap-2">
+            <CheckCircle className="w-8 h-8 text-emerald-600" />
+            <h3 className="font-semibold text-emerald-800">Registration Approved</h3>
+            <p className="text-sm text-emerald-700">Your registration has been approved for this session.</p>
+        </div>
+    </div>
+) : (
 
                     <div className="bg-white border border-slate-200 rounded-xl">
                         <div className="border-b border-slate-200 px-6 py-4">

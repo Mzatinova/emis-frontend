@@ -256,7 +256,7 @@ const InstructorDash: React.FC<{ active: string }> = ({ active }) => {
         <PageHeader title="Instructor Dashboard" subtitle="View your students and enter results" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <StatCard label="My Assigned Courses" value={myAssignedCourses.length} icon={BookOpen} color="bg-emerald-600" />
-          <StatCard label="My Students" value={Object.values(studentsByCourse).flat().length} icon={Users} color="bg-blue-600" />
+         <StatCard label="My Students" value={new Set(Object.values(studentsByCourse).flat().map(s => s.id)).size} icon={Users} color="bg-blue-600" />
           <StatCard label="Results Entered" value={myResults.length} icon={FileText} color="bg-purple-600" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
