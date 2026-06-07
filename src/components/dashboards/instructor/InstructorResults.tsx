@@ -83,29 +83,65 @@ const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, 
 
     // Get students for selected class using registrations
     const studentsInClass = useMemo(() => {
-        if (!selectedClass) return [];
+    if (!selectedClass) return [];
 
-        return students.filter(s => {
-            const hasApprovedRegistration = registrations.some(r => {
-                // Parse courses if it's a JSON string
-                let coursesArray = r.courses;
-                if (typeof r.courses === 'string') {
-                    try {
-                        coursesArray = JSON.parse(r.courses);
-                    } catch (e) {
-                        coursesArray = [];
-                    }
+    return students.filter(s => {
+        // Get student's current level number
+        const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
+        
+        const hasApprovedRegistration = registrations.some(r => {
+            let coursesArray = r.courses;
+            if (typeof r.courses === 'string') {
+                try {
+                    coursesArray = JSON.parse(r.courses);
+                } catch (e) {
+                    coursesArray = [];
                 }
+            }
 
-                return String(r.studentId) === String(s.id) &&
-                    r.registrationStatus === 'approved' &&
-                    String(r.programName) === String(selectedClass.programName) &&
-                    String(r.level) === String(selectedClass.level) &&
-                    coursesArray?.includes(selectedClass.courseName);
-            });
-            return s.active && hasApprovedRegistration;
+            return String(r.studentId) === String(s.id) &&
+                r.registrationStatus === 'approved' &&
+                String(r.programName) === String(selectedClass.programName) &&
+                String(r.level) === String(selectedClass.level) &&
+                coursesArray?.includes(selectedClass.courseName);
         });
-    }, [selectedClass, students, registrations]);
+        
+        // Only include if student's current level matches the class level
+        return s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
+    });
+}, [selectedClass, students, registrations]);
+    // const studentsInClass = useMemo(() => {
+    //     if (!selectedClass) return [];
+
+    //     console.log('Selected class level:', selectedClass?.level);
+    // console.log('Student registrations:', registrations.map(r => ({ 
+    //     studentId: r.studentId, 
+    //     level: r.level, 
+    //     programName: r.programName,
+    //     studentLevel: students.find(s => String(s.id) === String(r.studentId))?.level
+    // })));
+
+    //     return students.filter(s => {
+    //         const hasApprovedRegistration = registrations.some(r => {
+    //             // Parse courses if it's a JSON string
+    //             let coursesArray = r.courses;
+    //             if (typeof r.courses === 'string') {
+    //                 try {
+    //                     coursesArray = JSON.parse(r.courses);
+    //                 } catch (e) {
+    //                     coursesArray = [];
+    //                 }
+    //             }
+
+    //             return String(r.studentId) === String(s.id) &&
+    //                 r.registrationStatus === 'approved' &&
+    //                 String(r.programName) === String(selectedClass.programName) &&
+    //                 String(r.level) === String(selectedClass.level) &&
+    //                 coursesArray?.includes(selectedClass.courseName);
+    //         });
+    //         return s.active && hasApprovedRegistration;
+    //     });
+    // }, [selectedClass, students, registrations]);
 
 
     // Get existing results for the selected course and session

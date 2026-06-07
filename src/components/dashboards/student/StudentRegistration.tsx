@@ -301,7 +301,49 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
             />
 
             {/* Registration Period Status */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6">
+            {/* Registration Period Status */}
+<div className="bg-white border border-slate-200 rounded-xl p-4 mb-6">
+    <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-slate-500" />
+            <div>
+                <p className="text-sm text-slate-600">Registration Period</p>
+                {currentRegistrationPeriod && currentRegistrationPeriod.registration_open ? (
+                    <>
+                        <p className="font-medium text-slate-900">
+                            {new Date(currentRegistrationPeriod.registration_start_date).toLocaleDateString()} - {new Date(currentRegistrationPeriod.registration_end_date).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-slate-500">Registration is <span className="text-emerald-600 font-medium">Open</span></p>
+                    </>
+                ) : currentRegistrationPeriod && !currentRegistrationPeriod.registration_open ? (
+                    <p className="text-amber-600">Registration is Currently Closed</p>
+                ) : (
+                    <p className="text-amber-600">No Active Registration Period</p>
+                )}
+            </div>
+        </div>
+        <div className="text-right">
+            <p className="text-sm text-slate-600">Your Status</p>
+            {myInvoices.some(inv => inv.status === 'approved' && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+                <div className="flex items-center gap-2 text-emerald-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="font-medium">Approved</span>
+                </div>
+            ) : myInvoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+                <div className="flex items-center gap-2 text-blue-600">
+                    <Clock className="w-4 h-4" />
+                    <span className="font-medium">Pending Approval</span>
+                </div>
+            ) : (
+                <div className="flex items-center gap-2 text-amber-600">
+                    <CreditCard className="w-4 h-4" />
+                    <span className="font-medium">Not Registered</span>
+                </div>
+            )}
+        </div>
+    </div>
+</div>
+            {/* <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-3">
                         <Calendar className="w-5 h-5 text-slate-500" />
@@ -339,7 +381,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                         )}
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* Eligible Levels Display */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

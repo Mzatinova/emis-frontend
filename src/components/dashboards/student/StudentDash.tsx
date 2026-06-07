@@ -33,6 +33,8 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
   const myResults = results.filter(r => String(r.studentId) === String(currentUser?.id) && r.status === 'approved');
 
   // Get most recent session results (last session with results)
+  
+    // Get most recent session results (last session with results)
   const sessionsWithResults = [...new Set(myResults.map(r => r.academic_session_id))].sort((a, b) => b - a);
   const lastCompletedSessionId = sessionsWithResults[0];
   const lastSessionResults = myResults.filter(r => r.academic_session_id === lastCompletedSessionId);
@@ -40,13 +42,15 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
 
   const totalCoursesInLevel = courses.length > 0 ? courses.length : 12;
 
-  const allPassed = lastSessionResults.length === 3 && lastSessionResults.every(r => r.grade !== 'F' && r.marks !== null);
-  const hasFail = lastSessionResults.some(r => r.grade === 'F');
+  // For last session results: pass if NO failing grades in that session
+  const hasFailInLastSession = lastSessionResults.some(r => r.grade === 'F');
+  const allPassedInLastSession = lastSessionResults.length > 0 && !hasFailInLastSession;
+
   console.log('sessionsWithResults:', sessionsWithResults);
   console.log('lastCompletedSessionId:', lastCompletedSessionId);
   console.log('lastSessionResults:', lastSessionResults);
-  console.log('allPassed:', allPassed);
-  console.log('hasFail:', hasFail);
+  console.log('allPassedInLastSession:', allPassedInLastSession);
+  console.log('hasFailInLastSession:', hasFailInLastSession);
 
   let overallStatus = '';
   let overallStatusColor = '';
@@ -56,14 +60,46 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
     overallStatus = 'No Results Available';
     overallStatusColor = 'text-slate-500';
     StatusIcon = Clock;
-  } else if (allPassed) {
+  } else if (allPassedInLastSession) {
     overallStatus = 'PASS AND PROCEED';
     overallStatusColor = 'text-emerald-600';
     StatusIcon = CheckCircle;
-  } else if (hasFail) {
+  } else if (hasFailInLastSession) {
     overallStatus = 'FAILED - REPEAT';
     overallStatusColor = 'text-red-600';
   }
+  
+  // const sessionsWithResults = [...new Set(myResults.map(r => r.academic_session_id))].sort((a, b) => b - a);
+  // const lastCompletedSessionId = sessionsWithResults[0];
+  // const lastSessionResults = myResults.filter(r => r.academic_session_id === lastCompletedSessionId);
+  // const passedCourses = myResults.filter(r => r.grade !== 'F');
+
+  // const totalCoursesInLevel = courses.length > 0 ? courses.length : 12;
+
+  // const allPassed = lastSessionResults.length === 3 && lastSessionResults.every(r => r.grade !== 'F' && r.marks !== null);
+  // const hasFail = lastSessionResults.some(r => r.grade === 'F');
+  // console.log('sessionsWithResults:', sessionsWithResults);
+  // console.log('lastCompletedSessionId:', lastCompletedSessionId);
+  // console.log('lastSessionResults:', lastSessionResults);
+  // console.log('allPassed:', allPassed);
+  // console.log('hasFail:', hasFail);
+
+  // let overallStatus = '';
+  // let overallStatusColor = '';
+  // let StatusIcon = Award;
+
+  // if (lastSessionResults.length === 0) {
+  //   overallStatus = 'No Results Available';
+  //   overallStatusColor = 'text-slate-500';
+  //   StatusIcon = Clock;
+  // } else if (allPassed) {
+  //   overallStatus = 'PASS AND PROCEED';
+  //   overallStatusColor = 'text-emerald-600';
+  //   StatusIcon = CheckCircle;
+  // } else if (hasFail) {
+  //   overallStatus = 'FAILED - REPEAT';
+  //   overallStatusColor = 'text-red-600';
+  // }
 
   if (active === 'dashboard') {
     return (
@@ -156,12 +192,33 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
             <div className="flex-grow flex flex-col items-center justify-center text-center py-6 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
 
               {/* Last Session Results */}
+                            {/* Last Session Results */}
               <div className="w-full px-4 mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-slate-500">Last Session Results:</span>
                   {lastSessionResults.length === 0 ? (
                     <Badge status="warning">No Results</Badge>
-                  ) : allPassed ? (
+                  ) : allPassedInLastSession ? (
+                    <Badge status="success">PASSED ✓</Badge>
+                  ) : hasFailInLastSession ? (
+                    <Badge status="error">FAILED - REPEAT</Badge>
+                  ) : (
+                    <Badge status="warning">IN PROGRESS</Badge>
+                  )}
+                </div>
+                {lastSessionResults.length > 0 && (
+                  <p className="text-xs text-slate-400">
+                    {lastSessionResults.filter(r => r.grade !== 'F').length} of {lastSessionResults.length} course(s) passed
+                  </p>
+                )}
+              </div>
+              {/* <div className="w-full px-4 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-500">Last Session Results:</span>
+                  {lastSessionResults.length === 0 ? (
+                  //   <Badge status="warning">No Results</Badge>
+                  // ) : allPassed ? (
+                  
                     <Badge status="success">PASSED ✓</Badge>
                   ) : hasFail ? (
                     <Badge status="error">FAILED - REPEAT</Badge>
@@ -174,7 +231,7 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
                     {lastSessionResults.filter(r => r.grade !== 'F').length} of 3 courses passed
                   </p>
                 )}
-              </div>
+              </div> */}
 
               {/* Current Session Status */}
               <div className="w-full px-4 pt-3 border-t border-slate-200">

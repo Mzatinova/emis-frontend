@@ -28,26 +28,41 @@ const StudentResults: React.FC<StudentResultsProps> = () => {
         String(r.academic_session_id) === String(activeSession?.id)
     );
 
-    const allPassed = myResults.length === 3 && myResults.every(r => r.grade !== 'F' && r.marks !== null);
-    const hasFail = myResults.some(r => r.grade === 'F');
-    const hasIncomplete = myResults.length < 3;
+    // const allPassed = myResults.length === 3 && myResults.every(r => r.grade !== 'F' && r.marks !== null);
+    // const hasFail = myResults.some(r => r.grade === 'F');
+    // const hasIncomplete = myResults.length < 3;
+    // For a student, they should pass if they have NO failing grades in the current session
+const hasFail = myResults.some(r => r.grade === 'F');
+const allPassed = myResults.length > 0 && !hasFail;
 
     let statusText = '';
     let statusColor = '';
 
+
     if (myResults.length === 0) {
-        statusText = 'No results available';
-        statusColor = 'text-slate-500';
-    } else if (allPassed) {
-        statusText = 'PASS AND PROCEED';
-        statusColor = 'text-emerald-600';
-    } else if (hasFail) {
-        statusText = 'FAILED - REPEAT';
-        statusColor = 'text-red-600';
-    } else if (hasIncomplete) {
-        statusText = 'RESULTS PENDING';
-        statusColor = 'text-amber-600';
-    }
+    statusText = 'No results available';
+    statusColor = 'text-slate-500';
+} else if (allPassed) {
+    statusText = 'PASS AND PROCEED';
+    statusColor = 'text-emerald-600';
+} else if (hasFail) {
+    statusText = 'FAILED - REPEAT';
+    statusColor = 'text-red-600';
+}
+
+    // if (myResults.length === 0) {
+    //     statusText = 'No results available';
+    //     statusColor = 'text-slate-500';
+    // } else if (allPassed) {
+    //     statusText = 'PASS AND PROCEED';
+    //     statusColor = 'text-emerald-600';
+    // } else if (hasFail) {
+    //     statusText = 'FAILED - REPEAT';
+    //     statusColor = 'text-red-600';
+    // } else if (hasIncomplete) {
+    //     statusText = 'RESULTS PENDING';
+    //     statusColor = 'text-amber-600';
+    // }
 
     const handleDownloadPDF = () => {
         const doc = new jsPDF();
