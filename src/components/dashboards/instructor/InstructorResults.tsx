@@ -82,11 +82,49 @@ const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, 
     }, [courses, myAssignedCourses]);
 
     // Get students for selected class using registrations
-    const studentsInClass = useMemo(() => {
+//     const studentsInClass = useMemo(() => {
+//     if (!selectedClass) return [];
+
+//     return students.filter(s => {
+//         // Get student's current level number
+//         const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
+        
+//         const hasApprovedRegistration = registrations.some(r => {
+//             let coursesArray = r.courses;
+//             if (typeof r.courses === 'string') {
+//                 try {
+//                     coursesArray = JSON.parse(r.courses);
+//                 } catch (e) {
+//                     coursesArray = [];
+//                 }
+//             }
+
+//             return String(r.studentId) === String(s.id) &&
+//                 r.registrationStatus === 'approved' &&
+//                 String(r.programName) === String(selectedClass.programName) &&
+//                 String(r.level) === String(selectedClass.level) &&
+//                 coursesArray?.includes(selectedClass.courseName);
+//         });
+        
+//         // Only include if student's current level matches the class level
+//         return s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
+//     });
+// }, [selectedClass, students, registrations]);
+
+const studentsInClass = useMemo(() => {
     if (!selectedClass) return [];
 
+    const activeSession = sessions.find(s => s.active === true);
+    console.log('Active session ID:', activeSession?.id);
+    console.log('Registrations with session IDs:', registrations.map(r => ({ 
+        studentId: r.studentId, 
+        academic_session_id: r.academic_session_id,
+        level: r.level,
+        programName: r.programName,
+        courses: r.courses
+    })));
+
     return students.filter(s => {
-        // Get student's current level number
         const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
         
         const hasApprovedRegistration = registrations.some(r => {
@@ -99,17 +137,72 @@ const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, 
                 }
             }
 
-            return String(r.studentId) === String(s.id) &&
-                r.registrationStatus === 'approved' &&
-                String(r.programName) === String(selectedClass.programName) &&
-                String(r.level) === String(selectedClass.level) &&
-                coursesArray?.includes(selectedClass.courseName);
+            const sessionMatch = String(r.academic_session_id) === String(activeSession?.id);
+            const programMatch = String(r.programName) === String(selectedClass.programName);
+            const levelMatch = String(r.level) === String(selectedClass.level);
+            const courseMatch = coursesArray?.includes(selectedClass.courseName);
+            const statusMatch = r.registrationStatus === 'approved';
+            const studentMatch = String(r.studentId) === String(s.id);
+
+            const allMatch = studentMatch && statusMatch && programMatch && levelMatch && courseMatch && sessionMatch;
+            
+            if (allMatch) {
+                console.log('Student matched:', s.name, 'Session match:', sessionMatch);
+            }
+            return allMatch;
         });
         
-        // Only include if student's current level matches the class level
         return s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
     });
-}, [selectedClass, students, registrations]);
+}, [selectedClass, students, registrations, sessions]);
+
+// const studentsInClass = useMemo(() => {
+//     if (!selectedClass) return [];
+
+//     console.log('Selected class:', selectedClass);
+//     console.log('All students:', students.map(s => ({ id: s.id, name: s.name, level: s.level, active: s.active })));
+//     console.log('Registrations:', registrations.map(r => ({ 
+//         studentId: r.studentId, 
+//         level: r.level, 
+//         programName: r.programName,
+//         registrationStatus: r.registrationStatus,
+//         courses: r.courses,
+//         academic_session_id: r.academic_session_id
+//     })));
+
+//     return students.filter(s => {
+//         const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
+        
+//         const hasApprovedRegistration = registrations.some(r => {
+//             let coursesArray = r.courses;
+//             if (typeof r.courses === 'string') {
+//                 try {
+//                     coursesArray = JSON.parse(r.courses);
+//                 } catch (e) {
+//                     coursesArray = [];
+//                 }
+//             }
+
+//             const match = String(r.studentId) === String(s.id) &&
+//                 r.registrationStatus === 'approved' &&
+//                 String(r.programName) === String(selectedClass.programName) &&
+//                 String(r.level) === String(selectedClass.level) &&
+//                 coursesArray?.includes(selectedClass.courseName);
+            
+//             if (match) {
+//                 console.log('Student matched:', s.name, 'Registration:', r);
+//             }
+//             return match;
+//         });
+        
+//         const result = s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
+//         if (!result && s.level === `Level ${selectedClass.level}`) {
+//             console.log('Student not matched:', s.name, 'hasApprovedRegistration:', hasApprovedRegistration, 'studentLevelNumber:', studentLevelNumber, 'selectedClass.level:', selectedClass.level);
+//         }
+//         return result;
+//     });
+// }, [selectedClass, students, registrations]);
+
     // const studentsInClass = useMemo(() => {
     //     if (!selectedClass) return [];
 

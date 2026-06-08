@@ -12,6 +12,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
     // const { currentUser, students, apiRequest } = useEMIS();
     // const { currentUser, students, apiRequest, feeStructuresList } = useEMIS();
     const { currentUser, students, apiRequest, feeStructuresList, eligibleLevels, myRegistrations, myInvoices, canRegister, registrationReason, currentRegistrationPeriod, fetchRegistrationData, sessions } = useEMIS();
+    console.log('currentRegistrationPeriod:', currentRegistrationPeriod);
     console.log('feeStructuresList:', feeStructuresList);
     const [loading, setLoading] = useState(false);
     // const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
