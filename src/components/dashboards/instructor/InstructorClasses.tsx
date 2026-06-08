@@ -62,19 +62,36 @@ const InstructorClasses: React.FC<InstructorClassesProps> = ({ toast, setToast, 
     // Get students for selected class
 
     const studentsInClass = useMemo(() => {
-        if (!selectedClass) return [];
+    if (!selectedClass) return [];
+    if (!activeSession) return [];
 
-        return students.filter(s => {
-            const hasApprovedRegistration = registrations.some(r =>
-                String(r.studentId) === String(s.id) &&
-                r.registrationStatus === 'approved' &&
-                String(r.programName) === String(selectedClass.programName) &&
-                String(r.level) === String(selectedClass.level) &&
-                r.courses?.includes(selectedClass.courseName)
-            );
-            return s.active && hasApprovedRegistration;
-        });
-    }, [selectedClass, students, registrations]);
+    return students.filter(s => {
+        const hasApprovedRegistration = registrations.some(r =>
+            String(r.studentId) === String(s.id) &&
+            r.registrationStatus === 'approved' &&
+            String(r.programName) === String(selectedClass.programName) &&
+            String(r.level) === String(selectedClass.level) &&
+            r.courses?.includes(selectedClass.courseName) &&
+            String(r.academic_session_id) === String(activeSession.id)
+        );
+        return s.active && hasApprovedRegistration;
+    });
+}, [selectedClass, students, registrations, activeSession]);
+
+    // const studentsInClass = useMemo(() => {
+    //     if (!selectedClass) return [];
+
+    //     return students.filter(s => {
+    //         const hasApprovedRegistration = registrations.some(r =>
+    //             String(r.studentId) === String(s.id) &&
+    //             r.registrationStatus === 'approved' &&
+    //             String(r.programName) === String(selectedClass.programName) &&
+    //             String(r.level) === String(selectedClass.level) &&
+    //             r.courses?.includes(selectedClass.courseName)
+    //         );
+    //         return s.active && hasApprovedRegistration;
+    //     });
+    // }, [selectedClass, students, registrations]);
 
 
     const filteredStudents = studentsInClass.filter(s =>
