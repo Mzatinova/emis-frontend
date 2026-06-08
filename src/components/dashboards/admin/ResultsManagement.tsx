@@ -216,12 +216,39 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
 
     // Get unique levels from students (dynamically)
     const levels = useMemo(() => {
-        const levelSet = new Set();
-        students.forEach(s => {
-            if (s.level) levelSet.add(s.level);
-        });
-        return Array.from(levelSet).sort();
-    }, [students]);
+    const levelSet = new Set<string>();
+    students.forEach(s => {
+        if (s.level) {
+            // Convert to string and clean up
+            let levelValue = String(s.level).trim();
+            
+            // If it's just a number like "1", convert to "Level 1"
+            if (levelValue.match(/^\d+$/)) {
+                levelValue = `Level ${levelValue}`;
+            }
+            // If it's already "Level 1", keep as is
+            // If it's "level 1" (lowercase), capitalize it
+            else if (levelValue.toLowerCase().startsWith('level')) {
+                levelValue = levelValue.charAt(0).toUpperCase() + levelValue.slice(1).toLowerCase();
+            }
+            
+            levelSet.add(levelValue);
+        }
+    });
+    // Sort numerically by the level number
+    return Array.from(levelSet).sort((a, b) => {
+        const numA = parseInt((a as string).replace('Level ', ''));
+        const numB = parseInt((b as string).replace('Level ', ''));
+        return numA - numB;
+    });
+}, [students]);
+    // const levels = useMemo(() => {
+    //     const levelSet = new Set();
+    //     students.forEach(s => {
+    //         if (s.level) levelSet.add(s.level);
+    //     });
+    //     return Array.from(levelSet).sort();
+    // }, [students]);
 
 
     return (
@@ -450,6 +477,7 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
                 </div>
             </Modal>
             {/* Bulk Publish Modal */}
+            {/* Bulk Publish Modal - WORKING VERSION */}
             <Modal open={showBulkModal} onClose={() => setShowBulkModal(false)} title="Confirm Bulk Publish" size="md">
                 <div className="space-y-4">
                     <p className="text-sm text-slate-600">
@@ -461,35 +489,23 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
                             {filters.programName || 'All Programs'} - {filters.level || 'All Levels'}
                         </p>
                         <p className="text-sm text-blue-600 mt-1">
-                            {pendingStudentsCount} student(s) with pending results will be published.
+                            {filteredResults.filter(r => r.status === 'pending').length} result(s) will be published.
                         </p>
                     </div>
 
-
-
                     <div className="flex justify-end gap-2 pt-2">
                         <Button type="button" variant="secondary" onClick={() => setShowBulkModal(false)}>Cancel</Button>
-                        {/* <Button variant="success" onClick={() => { */}
                         <Button variant="success" onClick={async () => {
-                            if (confirm(`Publish results for ${pendingStudentsCount} student(s)?`)) {
-                                const studentIds = students.filter(s => {
-                                    const programMatch = !filters.programName || s.program === filters.programName;
-                                    const levelMatch = !filters.level || s.level === filters.level;
-                                    return programMatch && levelMatch && isStudentApproved(s.id);
-                                }).map(s => s.id);
-
-                                const pendingResults = results.filter(r =>
-                                    studentIds.includes(r.studentId) && r.status === 'pending'
-                                );
-
-                                // pendingResults.forEach(r => approveResult(r.id));
-                                // setToast(`${pendingResults.length} results published for ${pendingStudentsCount} student(s)`);
-                                // setShowBulkModal(false);
-                                await Promise.all(pendingResults.map(r => approveResult(r.id)));
-                                await fetchInvoices();
-                                setToast(`${pendingResults.length} results published for ${pendingStudentsCount} student(s)`);
+                            const pendingResults = filteredResults.filter(r => r.status === 'pending');
+                            if (pendingResults.length === 0) {
+                                setToast('No pending results found');
                                 setShowBulkModal(false);
+                                return;
                             }
+                            await Promise.all(pendingResults.map(r => approveResult(r.id)));
+                            await fetchInvoices();
+                            setToast(`${pendingResults.length} results published successfully`);
+                            setShowBulkModal(false);
                         }}>
                             <Send className="w-4 h-4 mr-1" />
                             Confirm Publish

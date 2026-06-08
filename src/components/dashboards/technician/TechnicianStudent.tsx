@@ -65,51 +65,95 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
         setToast(`Student ${!s.active ? 'activated' : 'deactivated'}`);
     };
 
-    const handleBulkUpload = () => {
-        const lines = csvText.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const handleBulkUpload = async () => {
+    const lines = csvText.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
 
-        // Required headers check
-        if (!headers.includes('name')) {
-            setToast('CSV must have "name" column');
-            return;
-        }
+    if (!headers.includes('name')) {
+        setToast('CSV must have "name" column');
+        return;
+    }
 
-        setUploading(true);
-        let added = 0;
-        let failed = 0;
+    setUploading(true);
+    let added = 0;
+    let failed = 0;
 
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim());
-            const studentData: any = {};
+    for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const studentData: any = {};
 
-            headers.forEach((header, idx) => {
-                if (header === 'name') studentData.name = values[idx];
-                if (header === 'program') studentData.program = values[idx];
-                if (header === 'level') studentData.level = values[idx];
-                if (header === 'email') studentData.email = values[idx];
-                if (header === 'password') studentData.password = values[idx];
-            });
+        headers.forEach((header, idx) => {
+            if (header === 'name') studentData.name = values[idx];
+            if (header === 'program') studentData.program = values[idx];
+            if (header === 'level') studentData.level = values[idx];
+            if (header === 'email') studentData.email = values[idx];
+            if (header === 'password') studentData.password = values[idx];
+        });
 
-            if (studentData.name) {
-                studentData.password = studentData.password || 'student123';
-                studentData.active = true;
-                try {
-                    addStudent(studentData);
-                    added++;
-                } catch (err) {
-                    failed++;
-                }
-            } else {
+        if (studentData.name) {
+            studentData.password = studentData.password || 'student123';
+            studentData.active = true;
+            try {
+                await addStudent(studentData);
+                added++;
+            } catch (err) {
                 failed++;
             }
+        } else {
+            failed++;
         }
+    }
 
-        setUploading(false);
-        setBulkModal(false);
-        setCsvText('name,program,level,email\nJohn Nanji,Electrical Engineering,Year 1,john@example.com\nJane Smith,Mechanical Engineering,Year 2,jane@example.com');
-        setToast(`Bulk upload complete: ${added} students added, ${failed} failed`);
-    };
+    setUploading(false);
+    setBulkModal(false);
+    setCsvText('name,program,level,email\nJohn Nanji,Electrical Engineering,Year 1,john@example.com\nJane Smith,Mechanical Engineering,Year 2,jane@example.com');
+    setToast(`Bulk upload complete: ${added} students added, ${failed} failed`);
+};
+    // const handleBulkUpload = () => {
+    //     const lines = csvText.trim().split('\n');
+    //     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+    //     // Required headers check
+    //     if (!headers.includes('name')) {
+    //         setToast('CSV must have "name" column');
+    //         return;
+    //     }
+
+    //     setUploading(true);
+    //     let added = 0;
+    //     let failed = 0;
+
+    //     for (let i = 1; i < lines.length; i++) {
+    //         const values = lines[i].split(',').map(v => v.trim());
+    //         const studentData: any = {};
+
+    //         headers.forEach((header, idx) => {
+    //             if (header === 'name') studentData.name = values[idx];
+    //             if (header === 'program') studentData.program = values[idx];
+    //             if (header === 'level') studentData.level = values[idx];
+    //             if (header === 'email') studentData.email = values[idx];
+    //             if (header === 'password') studentData.password = values[idx];
+    //         });
+
+    //         if (studentData.name) {
+    //             studentData.password = studentData.password || 'student123';
+    //             studentData.active = true;
+    //             try {
+    //                 addStudent(studentData);
+    //                 added++;
+    //             } catch (err) {
+    //                 failed++;
+    //             }
+    //         } else {
+    //             failed++;
+    //         }
+    //     }
+
+    //     setUploading(false);
+    //     setBulkModal(false);
+    //     setCsvText('name,program,level,email\nJohn Nanji,Electrical Engineering,Year 1,john@example.com\nJane Smith,Mechanical Engineering,Year 2,jane@example.com');
+    //     setToast(`Bulk upload complete: ${added} students added, ${failed} failed`);
+    // };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -125,30 +169,64 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
         reader.readAsBinaryString(file);
     };
 
-    const processBulkUpload = () => {
-        if (previewData.length === 0) return;
-        setUploading(true);
-        let added = 0;
-        previewData.forEach((row: any) => {
-            const studentData = {
-                name: row.name || row.Name || row.NAME,
-                program: row.program || row.Program,
-                level: row.level || row.Level,
-                email: row.email || row.Email,
-                password: row.password || 'student123',
-                active: true
-            };
-            if (studentData.name) {
-                addStudent(studentData);
+    const processBulkUpload = async () => {
+    if (previewData.length === 0) return;
+    setUploading(true);
+    let added = 0;
+    let failed = 0;
+    
+    for (const row of previewData) {
+        const studentData = {
+            name: row.name || row.Name || row.NAME,
+            program: row.program || row.Program,
+            level: row.level || row.Level,
+            email: row.email || row.Email,
+            password: row.password || 'student123',
+            active: true
+        };
+        if (studentData.name) {
+            try {
+                await addStudent(studentData);
                 added++;
+            } catch (err) {
+                failed++;
             }
-        });
-        setUploading(false);
-        setBulkModal(false);
-        setPreviewData([]);
-        setFileName('');
-        setToast(`${added} students added`);
-    };
+        } else {
+            failed++;
+        }
+    }
+    
+    setUploading(false);
+    setBulkModal(false);
+    setPreviewData([]);
+    setFileName('');
+    setToast(`${added} students added, ${failed} failed`);
+};
+
+    // const processBulkUpload = () => {
+    //     if (previewData.length === 0) return;
+    //     setUploading(true);
+    //     let added = 0;
+    //     previewData.forEach((row: any) => {
+    //         const studentData = {
+    //             name: row.name || row.Name || row.NAME,
+    //             program: row.program || row.Program,
+    //             level: row.level || row.Level,
+    //             email: row.email || row.Email,
+    //             password: row.password || 'student123',
+    //             active: true
+    //         };
+    //         if (studentData.name) {
+    //             addStudent(studentData);
+    //             added++;
+    //         }
+    //     });
+    //     setUploading(false);
+    //     setBulkModal(false);
+    //     setPreviewData([]);
+    //     setFileName('');
+    //     setToast(`${added} students added`);
+    // };
 
     const filteredStudents = useMemo(() =>
         students.filter(s =>

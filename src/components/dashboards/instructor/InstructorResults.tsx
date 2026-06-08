@@ -605,9 +605,9 @@ const studentsInClass = useMemo(() => {
                     subtitle="Enter exam results for students"
                     action={
                         <div className="flex gap-2">
-                            <Button variant="secondary" onClick={() => setCsvOpen(true)}>
+                            {/* <Button variant="secondary" onClick={() => setCsvOpen(true)}>
                                 <Upload className="w-4 h-4 inline mr-1" />CSV Upload
-                            </Button>
+                            </Button> */}
                             <Button onClick={handleSaveAll} disabled={saving} variant="primary">
                                 {saving ? (
                                     <>
