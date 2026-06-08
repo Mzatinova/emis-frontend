@@ -24,10 +24,10 @@ interface InstructorManagementProps {
 const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setToast }) => {
     //    const { users, courses, apiRequest } = useEMIS();
     const { users, courses, apiRequest, programsList, fetchProgramsGlobal } = useEMIS();
-
     const [instructorSearch, setInstructorSearch] = useState('');
     const [assignModal, setAssignModal] = useState(false);
     const [selectedInstructor, setSelectedInstructor] = useState<User | null>(null);
+    const [assigning, setAssigning] = useState(false);
 
     // Load programs from localStorage
     // const [programs, setPrograms] = useState<Program[]>([]);
@@ -79,18 +79,46 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
     // };
 
     const removeInstructorFromAllCourses = async (instructorId: string) => {
+        setAssigning(true);
         try {
-            await apiRequest('/instructor/assign', 'POST', {
-                instructorId: instructorId,
-                assignments: []
-            });
+            // Unassign from all courses by setting instructor_id to null
+            for (const program of programsList) {
+                for (const course of program.courses) {
+                    if (course.instructorId === instructorId) {
+                        await apiRequest(`/programs/${program.id}/assign`, 'POST', {
+                            level: course.level,
+                            course_name: course.courseName,
+                            instructor_id: null
+                        });
+                    }
+                }
+            }
+
             await fetchProgramsGlobal();
+            console.log('Updated programsList:', programsList);
+            console.log('Programs refreshed after save');
             setToast(`Removed ${selectedInstructor?.name} from all courses`);
             setAssignModal(false);
         } catch (error) {
             setToast('Failed to remove assignments');
+        } finally {
+            setAssigning(false);
         }
     };
+
+    // const removeInstructorFromAllCourses = async (instructorId: string) => {
+    //     try {
+    //         await apiRequest('/instructor/assign', 'POST', {
+    //             instructorId: instructorId,
+    //             assignments: []
+    //         });
+    //         await fetchProgramsGlobal();
+    //         setToast(`Removed ${selectedInstructor?.name} from all courses`);
+    //         setAssignModal(false);
+    //     } catch (error) {
+    //         setToast('Failed to remove assignments');
+    //     }
+    // };
 
     // Remove instructor from all courses
     // const removeInstructorFromAllCourses = (instructorId: string) => {
@@ -108,8 +136,27 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
     // };
 
     // Open assign modal for an instructor
+    // const openAssignModal = (instructor: User) => {
+    //     setSelectedInstructor(instructor);
+    //     setAssignModal(true);
+    // };
+
+    // Open assign modal for an instructor
     const openAssignModal = (instructor: User) => {
         setSelectedInstructor(instructor);
+
+        // Initialize tempAssignments with current assignments
+        const assignments: Record<string, boolean> = {};
+        programsList.forEach(program => {
+            program.courses.forEach(course => {
+                if (course.instructorId === instructor.id) {
+                    const key = `${program.id}-${course.level}-${course.courseName}`;
+                    assignments[key] = true;
+                }
+            });
+        });
+        setTempAssignments(assignments);
+
         setAssignModal(true);
     };
 
@@ -138,33 +185,97 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
         const key = `${programId}-${level}-${courseName}`;
         setTempAssignments(prev => ({ ...prev, [key]: !prev[key] }));
     };
-
     const saveAssignments = async () => {
         if (!selectedInstructor) return;
 
-        const assignments = [];
-        Object.entries(tempAssignments).forEach(([key, isAssigned]) => {
-            if (isAssigned) {
+        console.log('tempAssignments before save:', tempAssignments);
+
+        setAssigning(true);
+        try {
+            // Process each assignment change individually
+            for (const [key, isAssigned] of Object.entries(tempAssignments)) {
                 const [programId, levelStr, ...courseNameParts] = key.split('-');
                 const level = parseInt(levelStr);
                 const courseName = courseNameParts.join('-');
-                assignments.push({ programId, level, courseName });
+                const instructorId = isAssigned ? selectedInstructor.id : null;
+
+                console.log(`Saving: ${programId} - Level ${level} - ${courseName} -> instructor: ${instructorId}`);
+
+                await apiRequest(`/programs/${programId}/assign`, 'POST', {
+                    level: level,
+                    course_name: courseName,
+                    instructor_id: instructorId
+                });
             }
-        });
 
-
-        try {
-            await apiRequest('/instructor/assign', 'POST', {
-                instructorId: selectedInstructor.id,
-                assignments
-            });
             await fetchProgramsGlobal();
             setToast(`Assignments saved for ${selectedInstructor.name}`);
             setAssignModal(false);
         } catch (error) {
+            console.error('Failed to save assignments:', error);
             setToast('Failed to save assignments');
+        } finally {
+            setAssigning(false);
         }
     };
+    // const saveAssignments = async () => {
+    //     if (!selectedInstructor) return;
+
+    //     setAssigning(true);
+    //     try {
+    //         // Process each assignment change individually
+    //         for (const [key, isAssigned] of Object.entries(tempAssignments)) {
+    //             const [programId, levelStr, ...courseNameParts] = key.split('-');
+    //             const level = parseInt(levelStr);
+    //             const courseName = courseNameParts.join('-');
+
+    //             // Send instructor_id if assigned, null if unassigned
+    //             const instructorId = isAssigned ? selectedInstructor.id : null;
+
+    //             await apiRequest(`/programs/${programId}/assign`, 'POST', {
+    //                 level: level,
+    //                 course_name: courseName,
+    //                 instructor_id: instructorId
+    //             });
+    //         }
+
+    //         await fetchProgramsGlobal();
+    //         setToast(`Assignments saved for ${selectedInstructor.name}`);
+    //         setAssignModal(false);
+    //     } catch (error) {
+    //         console.error('Failed to save assignments:', error);
+    //         setToast('Failed to save assignments');
+    //     } finally {
+    //         setAssigning(false);
+    //     }
+    // };
+
+    // const saveAssignments = async () => {
+    //     if (!selectedInstructor) return;
+
+    //     const assignments = [];
+    //     Object.entries(tempAssignments).forEach(([key, isAssigned]) => {
+    //         if (isAssigned) {
+    //             const [programId, levelStr, ...courseNameParts] = key.split('-');
+    //             const level = parseInt(levelStr);
+    //             const courseName = courseNameParts.join('-');
+    //             assignments.push({ programId, level, courseName });
+    //         }
+    //     });
+
+
+    //     try {
+    //         await apiRequest('/instructor/assign', 'POST', {
+    //             instructorId: selectedInstructor.id,
+    //             assignments
+    //         });
+    //         await fetchProgramsGlobal();
+    //         setToast(`Assignments saved for ${selectedInstructor.name}`);
+    //         setAssignModal(false);
+    //     } catch (error) {
+    //         setToast('Failed to save assignments');
+    //     }
+    // };
 
     return (
         <div>
@@ -298,7 +409,8 @@ const InstructorManagement: React.FC<InstructorManagementProps> = ({ toast, setT
                                 <Button type="button" variant="secondary" onClick={() => setAssignModal(false)}>
                                     Cancel
                                 </Button>
-                                <Button onClick={() => { saveAssignments(); }} onMouseEnter={startAssignment}>
+                                <Button onClick={() => { saveAssignments(); }} disabled={assigning}>
+                                    {assigning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
                                     Save Assignments
                                 </Button>
                             </div>

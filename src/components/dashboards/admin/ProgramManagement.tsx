@@ -33,12 +33,12 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
     const [programModal, setProgramModal] = useState(false);
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [programForm, setProgramForm] = useState({ name: '', description: '' });
-
     const [assignInstructorModal, setAssignInstructorModal] = useState(false);
     const [assigning, setAssigning] = useState(false);
     const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
     const [selectedCourse, setSelectedCourse] = useState<ProgramCourse | null>(null);
     const [selectedLevel, setSelectedLevel] = useState<number>(1);
+    const [selectedInstructorId, setSelectedInstructorId] = useState<string | null>(null);
 
 
     // const fetchPrograms = async () => {
@@ -138,29 +138,51 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
         setSelectedProgram(program);
         setSelectedLevel(level);
         setSelectedCourse(course);
+         setSelectedInstructorId(course.instructorId);
         setAssignInstructorModal(true);
     };
 
     const saveInstructorAssignment = async (instructorId: string | null) => {
-        if (!selectedProgram || !selectedCourse) return;
-        setAssigning(true);
-        try {
-            await apiRequest(`/programs/${selectedProgram.id}/assign`, 'POST', {
-                level: selectedCourse.level,
-                course_name: selectedCourse.courseName,
-                instructor_id: instructorId
-            });
-            // await fetchPrograms();
-            await fetchProgramsGlobal();
-            setToast(`Instructor assigned to ${selectedCourse.courseName} (Level ${selectedCourse.level})`);
-            setAssignInstructorModal(false);
-        } catch (error) {
-            console.error('Failed to assign instructor:', error);
-            setToast('Failed to assign instructor');
-        } finally {
-            setAssigning(false);
-        }
-    };
+    if (!selectedProgram || !selectedCourse) return;
+    setAssigning(true);
+    try {
+        await apiRequest(`/programs/${selectedProgram.id}/assign`, 'POST', {
+            level: selectedCourse.level,
+            course_name: selectedCourse.courseName,
+            instructor_id: instructorId
+        });
+        await fetchProgramsGlobal();
+        setToast(`Instructor assigned to ${selectedCourse.courseName} (Level ${selectedCourse.level})`);
+        setAssignInstructorModal(false);
+        setSelectedInstructorId(''); // Reset
+    } catch (error) {
+        console.error('Failed to assign instructor:', error);
+        setToast('Failed to assign instructor');
+    } finally {
+        setAssigning(false);
+    }
+};
+
+    // const saveInstructorAssignment = async (instructorId: string | null) => {
+    //     if (!selectedProgram || !selectedCourse) return;
+    //     setAssigning(true);
+    //     try {
+    //         await apiRequest(`/programs/${selectedProgram.id}/assign`, 'POST', {
+    //             level: selectedCourse.level,
+    //             course_name: selectedCourse.courseName,
+    //             instructor_id: instructorId
+    //         });
+    //         // await fetchPrograms();
+    //         await fetchProgramsGlobal();
+    //         setToast(`Instructor assigned to ${selectedCourse.courseName} (Level ${selectedCourse.level})`);
+    //         setAssignInstructorModal(false);
+    //     } catch (error) {
+    //         console.error('Failed to assign instructor:', error);
+    //         setToast('Failed to assign instructor');
+    //     } finally {
+    //         setAssigning(false);
+    //     }
+    // };
 
     const getInstructorName = (instructorId: string | null, instructorName?: string | null) => {
         if (!instructorId) return 'Not assigned';
@@ -269,10 +291,10 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
                                                                     </Badge>
                                                                     <button
                                                                         onClick={() => openAssignInstructor(program, level, course)}
-                                                                        className="p-1 hover:bg-slate-100 rounded text-slate-600"
+                                                                        className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
                                                                         title="Assign Instructor"
                                                                     >
-                                                                        <Users className="w-3 h-3" />
+                                                                        Assign
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -317,24 +339,50 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
                 </form>
             </Modal>
 
-            <Modal open={assignInstructorModal} onClose={() => !assigning && setAssignInstructorModal(false)} title={`Assign Instructor - ${selectedCourse?.courseName} (Level ${selectedLevel})`}>
-                <div className="space-y-4">
-                    <p className="text-sm text-slate-600">Select instructor for {selectedProgram?.name} - Level {selectedLevel} {selectedCourse?.courseName}</p>
-                    <Select
-                        value={selectedCourse?.instructorId || ''}
-                        onChange={(e) => saveInstructorAssignment(e.target.value || null)}
-                        disabled={assigning}
-                    >
-                        <option value="">-- None assigned --</option>
-                        {instructors.map(i => (
-                            <option key={i.id} value={i.id}>{i.name}</option>
-                        ))}
-                    </Select>
-                    <div className="flex justify-end gap-2">
-                        <Button type="button" variant="secondary" onClick={() => setAssignInstructorModal(false)} disabled={assigning}>Cancel</Button>
-                    </div>
-                </div>
-            </Modal>
+         <Modal open={assignInstructorModal} onClose={() => !assigning && setAssignInstructorModal(false)} title={`Assign Instructor - ${selectedCourse?.courseName} (Level ${selectedLevel})`}>
+    <div className="space-y-4">
+        <p className="text-sm text-slate-600">Select instructor for {selectedProgram?.name} - Level {selectedLevel} {selectedCourse?.courseName}</p>
+        
+        <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Instructor</label>
+            <Select
+               value={selectedInstructorId || ''}
+                onChange={(e) => {
+                    // Store selected value in state instead of saving immediately
+                    setSelectedInstructorId(e.target.value || null);
+                }}
+                disabled={assigning}
+            >
+                <option value="">-- None assigned --</option>
+                {instructors.map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                ))}
+            </Select>
+        </div>
+        
+        <div className="flex justify-end gap-2 pt-4">
+            <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={() => {
+                    setAssignInstructorModal(false);
+                    setSelectedInstructorId('');
+                }} 
+                disabled={assigning}
+            >
+                Cancel
+            </Button>
+            <Button 
+                type="button" 
+                onClick={() => saveInstructorAssignment(selectedInstructorId)}
+                disabled={assigning}
+            >
+                {assigning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                Confirm Assign
+            </Button>
+        </div>
+    </div>
+</Modal>
         </div>
     );
 };
