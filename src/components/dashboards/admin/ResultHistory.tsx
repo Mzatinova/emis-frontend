@@ -356,7 +356,7 @@ const ResultHistory: React.FC<ResultHistoryProps> = ({ toast, setToast }) => {
                                                         className="w-full px-4 py-3 bg-white hover:bg-slate-50 flex justify-between items-center"
                                                     >
                                                         <div className="flex items-center gap-3 flex-wrap">
-                                                            <span className="font-medium text-slate-800">Level {level}</span>
+                                                            <span className="font-medium text-slate-800">{level}</span>
                                                             <div className="flex gap-2 text-xs">
                                                                 <span className="text-green-600">✓ {stats.passed}</span>
                                                                 <span className="text-red-600">✗ {stats.failed}</span>
