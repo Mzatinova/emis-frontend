@@ -26,9 +26,18 @@ const pendingStudents = invoices.filter(i => String(i.academic_session_id) === S
     const repeaters = repeatersList.length;
 
     // Results stats
-    const publishedExams = results.filter(r => r.status === 'approved').length;
-    const resultsPending = results.filter(r => r.status === 'pending').length;
+    // const publishedExams = results.filter(r => r.status === 'approved').length;
+    // const resultsPending = results.filter(r => r.status === 'pending').length;
+// Results stats (only for current session)
+const publishedExams = results.filter(r => 
+    r.status === 'approved' && 
+    currentSession && String(r.academic_session_id) === String(currentSession.id)
+).length;
 
+const resultsPending = results.filter(r => 
+    r.status === 'pending' && 
+    currentSession && String(r.academic_session_id) === String(currentSession.id)
+).length;
     // Results just uploaded (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);

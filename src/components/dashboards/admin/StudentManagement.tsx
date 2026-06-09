@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useEMIS, Student } from '@/contexts/EMISContext';
 import { useRegistration } from '@/contexts/RegistrationContext';
 import { PageHeader, Modal, Field, Input, Select, Button, Table, Toast, Badge } from '@/components/shared/UI';
@@ -10,25 +10,43 @@ interface StudentManagementProps {
 }
 
 const StudentManagement: React.FC<StudentManagementProps> = ({ toast, setToast }) => {
-    const { students, updateStudent, repeatersList, sessions } = useEMIS();
+    const { students, updateStudent, repeatersList, sessions, apiRequest } = useEMIS();
     const { invoices } = useRegistration();
-    const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+    // const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+    const [activeTab, setActiveTab] = useState<'current' | 'all' | 'history'>('current');
     const [currentFilter, setCurrentFilter] = useState<'registered' | 'approved' | 'pending' | 'repeaters'>('registered');
     const [studentEditModal, setStudentEditModal] = useState(false);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-    const [studentForm, setStudentForm] = useState({ program: '', level: 'Level 1', active: true });
+    // const [studentForm, setStudentForm] = useState({ program: '', level: 'Level 1', active: true });
+   const [studentForm, setStudentForm] = useState({ program: '', level: 'Level 1' });
     const [studentSearch, setStudentSearch] = useState('');
     const [selectedRepeater, setSelectedRepeater] = useState<any>(null);
     const [selectedHistorySessionId, setSelectedHistorySessionId] = useState<string>('');
     const [sessionSearch, setSessionSearch] = useState('');
     const [sessionPage, setSessionPage] = useState(1);
     const sessionPageSize = 20;
+        const [allFilter, setAllFilter] = useState<'all' | 'active' | 'inactive'>('all');
+    const [programs, setPrograms] = useState<{ id: string, name: string }[]>([]);
 
     const currentSession = sessions.find(s => s.active === true);
     const [showToggleModal, setShowToggleModal] = useState(false);
 const [toggleStudent, setToggleStudent] = useState<Student | null>(null);
 
-    // Get all previous sessions
+useEffect(() => {
+    const fetchPrograms = async () => {
+        try {
+            const response = await apiRequest('/programs');
+            if (response.data) {
+                setPrograms(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch programs:', error);
+        }
+    };
+    fetchPrograms();
+}, []);   
+
+// Get all previous sessions
     const previousSessions = useMemo(() => {
         if (!currentSession) return sessions;
         return sessions.filter(s => String(s.id) !== String(currentSession.id));
@@ -128,7 +146,8 @@ const [toggleStudent, setToggleStudent] = useState<Student | null>(null);
 
     const openEditStudent = (s: Student) => {
         setEditingStudent(s);
-        setStudentForm({ program: s.program || '', level: s.level || 'Level 1', active: s.active });
+        // setStudentForm({ program: s.program || '', level: s.level || 'Level 1', active: s.active });
+        setStudentForm({ program: s.program || '', level: s.level || 'Level 1' });
         setStudentEditModal(true);
     };
 
@@ -167,6 +186,26 @@ const confirmToggleActive = () => {
     const pendingCount = currentSessionRegisteredStudents.filter(s => getStudentRegistrationStatus(s.id) === 'pending').length;
     const repeatersCount = currentSessionRegisteredStudents.filter(s => isStudentRepeater(s.id)).length;
 
+    const filteredAllStudents = useMemo(() => {
+    let filtered = students;
+    
+    if (allFilter === 'active') {
+        filtered = filtered.filter(s => s.active);
+    } else if (allFilter === 'inactive') {
+        filtered = filtered.filter(s => !s.active);
+    }
+    
+    if (studentSearch) {
+        const term = studentSearch.toLowerCase();
+        filtered = filtered.filter(s => 
+            s.name.toLowerCase().includes(term) || 
+            s.regNumber.toLowerCase().includes(term)
+        );
+    }
+    
+    return filtered;
+}, [students, allFilter, studentSearch]);
+
     return (
         <div>
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
@@ -177,6 +216,52 @@ const confirmToggleActive = () => {
 
             {/* Tabs */}
             <div className="flex gap-2 border-b border-slate-200 mb-4">
+    <button
+        onClick={() => {
+            setActiveTab('current');
+            setSelectedHistorySessionId('');
+            setStudentSearch('');
+            setCurrentFilter('registered');
+        }}
+        className={`px-4 py-2 text-sm font-medium transition ${activeTab === 'current'
+            ? 'border-b-2 border-emerald-600 text-emerald-600'
+            : 'text-slate-500 hover:text-slate-700'
+        }`}
+    >
+        Current Session {currentSession ? `(${currentSession.year})` : ''}
+    </button>
+    <button
+        onClick={() => {
+            setActiveTab('all');
+            setStudentSearch('');
+            setAllFilter('all');
+        }}
+        className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition ${activeTab === 'all'
+            ? 'border-b-2 border-emerald-600 text-emerald-600'
+            : 'text-slate-500 hover:text-slate-700'
+        }`}
+    >
+        <Users className="w-4 h-4" />
+        All Students
+    </button>
+    <button
+        onClick={() => {
+            setActiveTab('history');
+            setSelectedHistorySessionId('');
+            setSessionSearch('');
+            setSessionPage(1);
+            setStudentSearch('');
+        }}
+        className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition ${activeTab === 'history'
+            ? 'border-b-2 border-emerald-600 text-emerald-600'
+            : 'text-slate-500 hover:text-slate-700'
+        }`}
+    >
+        <History className="w-4 h-4" />
+        History
+    </button>
+</div>
+            {/* <div className="flex gap-2 border-b border-slate-200 mb-4">
                 <button
                     onClick={() => {
                         setActiveTab('current');
@@ -207,7 +292,7 @@ const confirmToggleActive = () => {
                     <History className="w-4 h-4" />
                     History
                 </button>
-            </div>
+            </div> */}
 
             {/* Current Session View */}
             {activeTab === 'current' && (
@@ -471,15 +556,90 @@ const confirmToggleActive = () => {
                 </div>
             )}
 
+                        {/* All Students View */}
+            {activeTab === 'all' && (
+                <>
+                    <div className="flex flex-wrap gap-2 mb-4 border-b border-slate-200">
+                        <button
+                            onClick={() => setAllFilter('all')}
+                            className={`px-4 py-2 text-sm font-medium transition ${allFilter === 'all'
+                                ? 'border-b-2 border-emerald-600 text-emerald-600'
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            All Students ({students.length})
+                        </button>
+                        <button
+                            onClick={() => setAllFilter('active')}
+                            className={`px-4 py-2 text-sm font-medium transition ${allFilter === 'active'
+                                ? 'border-b-2 border-emerald-600 text-emerald-600'
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            Active ({students.filter(s => s.active).length})
+                        </button>
+                        <button
+                            onClick={() => setAllFilter('inactive')}
+                            className={`px-4 py-2 text-sm font-medium transition ${allFilter === 'inactive'
+                                ? 'border-b-2 border-slate-600 text-slate-600'
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            Inactive ({students.filter(s => !s.active).length})
+                        </button>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4">
+                        <div className="relative">
+                            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                            <Input
+                                placeholder="Search by name or registration number"
+                                value={studentSearch}
+                                onChange={e => setStudentSearch(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                    </div>
+
+                    <Table headers={['Reg Number', 'Name', 'Program', 'Level', 'Status', 'Actions']} rowCount={filteredAllStudents.length}>
+                        {filteredAllStudents.map(s => (
+                            <tr key={s.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-mono text-xs text-blue-700">{s.regNumber}</td>
+                                <td className="px-4 py-3 font-medium">{s.name}</td>
+                                <td className="px-4 py-3 text-slate-600">{s.program || '—'}</td>
+                                <td className="px-4 py-3 text-slate-600">{s.level || '—'}</td>
+                                <td className="px-4 py-3">
+                                    <Badge status={s.active ? 'active' : 'inactive'}>
+                                        {s.active ? 'Active' : 'Inactive'}
+                                    </Badge>
+                                </td>
+                                <td className="px-4 py-3">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => openEditStudent(s)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium">
+                                            Edit
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </Table>
+                </>
+            )}
+
             {/* Edit Student Modal */}
             <Modal open={studentEditModal} onClose={() => setStudentEditModal(false)} title={`Edit Student: ${editingStudent?.name}`}>
                 <form onSubmit={submitEditStudent} className="space-y-4">
                     <Field label="Registration Number">
                         <Input value={editingStudent?.regNumber || ''} disabled className="bg-slate-100" />
                     </Field>
-                    <Field label="Program">
-                        <Input value={studentForm.program} onChange={e => setStudentForm({ ...studentForm, program: e.target.value })} placeholder="e.g. Electrical Engineering" />
-                    </Field>
+                 <Field label="Program">
+    <Select value={studentForm.program} onChange={e => setStudentForm({ ...studentForm, program: e.target.value })}>
+        <option value="">-- Select Program --</option>
+        {programs.map(p => (
+            <option key={p.id} value={p.name}>{p.name}</option>
+        ))}
+    </Select>
+</Field>
                     <Field label="Level">
                         <Select value={studentForm.level} onChange={e => setStudentForm({ ...studentForm, level: e.target.value })}>
                             <option>Level 1</option>
@@ -488,10 +648,10 @@ const confirmToggleActive = () => {
                             <option>Level 4</option>
                         </Select>
                     </Field>
-                    <label className="flex items-center gap-2 text-sm">
+                    {/* <label className="flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={studentForm.active} onChange={e => setStudentForm({ ...studentForm, active: e.target.checked })} />
                         Active
-                    </label>
+                    </label> */}
                     <div className="flex justify-end gap-2">
                         <Button type="button" variant="secondary" onClick={() => setStudentEditModal(false)}>Cancel</Button>
                         <Button type="submit">Save Changes</Button>
