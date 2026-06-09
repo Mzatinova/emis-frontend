@@ -439,6 +439,8 @@ export const EMISProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+     localStorage.clear();
+    
     // Clear local data immediately (makes logout instant)
     persistUser(null);
 
