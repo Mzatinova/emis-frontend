@@ -33,8 +33,8 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
   const myResults = results.filter(r => String(r.studentId) === String(currentUser?.id) && r.status === 'approved');
 
   // Get most recent session results (last session with results)
-  
-    // Get most recent session results (last session with results)
+
+  // Get most recent session results (last session with results)
   const sessionsWithResults = [...new Set(myResults.map(r => r.academic_session_id))].sort((a, b) => b - a);
   const lastCompletedSessionId = sessionsWithResults[0];
   const lastSessionResults = myResults.filter(r => r.academic_session_id === lastCompletedSessionId);
@@ -68,7 +68,7 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
     overallStatus = 'FAILED - REPEAT';
     overallStatusColor = 'text-red-600';
   }
-  
+
   // const sessionsWithResults = [...new Set(myResults.map(r => r.academic_session_id))].sort((a, b) => b - a);
   // const lastCompletedSessionId = sessionsWithResults[0];
   // const lastSessionResults = myResults.filter(r => r.academic_session_id === lastCompletedSessionId);
@@ -192,11 +192,20 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
             <div className="flex-grow flex flex-col items-center justify-center text-center py-6 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
 
               {/* Last Session Results */}
-                            {/* Last Session Results */}
+              {/* Last Session Results */}
               <div className="w-full px-4 mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-slate-500">Last Session Results:</span>
                   {lastSessionResults.length === 0 ? (
+                    <Badge status="warning">No Results</Badge>
+                  ) : allPassedInLastSession ? (
+                    <span className="text-emerald-600 font-semibold">✓ PASS AND PROCEED</span>
+                  ) : hasFailInLastSession ? (
+                    <span className="text-red-600 font-semibold">FAILED - REPEAT</span>
+                  ) : (
+                    <Badge status="warning">IN PROGRESS</Badge>
+                  )}
+                  {/* {lastSessionResults.length === 0 ? (
                     <Badge status="warning">No Results</Badge>
                   ) : allPassedInLastSession ? (
                     <Badge status="success">PASSED ✓</Badge>
@@ -204,7 +213,7 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
                     <Badge status="error">FAILED - REPEAT</Badge>
                   ) : (
                     <Badge status="warning">IN PROGRESS</Badge>
-                  )}
+                  )} */}
                 </div>
                 {lastSessionResults.length > 0 && (
                   <p className="text-xs text-slate-400">

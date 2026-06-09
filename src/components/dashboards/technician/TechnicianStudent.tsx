@@ -20,6 +20,10 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
     const [previewData, setPreviewData] = useState<any[]>([]);
     const [fileName, setFileName] = useState('');
 
+    const [showToggleModal, setShowToggleModal] = useState(false);
+const [toggleStudent, setToggleStudent] = useState<Student | null>(null);
+const [toggling, setToggling] = useState(false);
+
 
     useEffect(() => {
         const fetchPrograms = async () => {
@@ -60,10 +64,29 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
         setStudentModal(false);
     };
 
-    const toggleStudentActive = (s: Student) => {
-        updateStudent(s.id, { active: !s.active });
-        setToast(`Student ${!s.active ? 'activated' : 'deactivated'}`);
-    };
+    // const toggleStudentActive = (s: Student) => {
+    //     updateStudent(s.id, { active: !s.active });
+    //     setToast(`Student ${!s.active ? 'activated' : 'deactivated'}`);
+    // };
+    const openToggleModal = (s: Student) => {
+    setToggleStudent(s);
+    setShowToggleModal(true);
+};
+
+const confirmToggleActive = async () => {
+    if (!toggleStudent) return;
+    setToggling(true);
+    try {
+        await updateStudent(toggleStudent.id, { active: !toggleStudent.active });
+        setToast(`Student ${toggleStudent.name} ${!toggleStudent.active ? 'activated' : 'deactivated'}`);
+        setShowToggleModal(false);
+        setToggleStudent(null);
+    } catch (error) {
+        setToast('Failed to update student status');
+    } finally {
+        setToggling(false);
+    }
+};
 
     const handleBulkUpload = async () => {
     const lines = csvText.trim().split('\n');
@@ -273,7 +296,7 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
                         <td className="px-4 py-3">
                             <div className="flex gap-2">
                                 <button onClick={() => openEditStudent(s)} className="p-1.5 hover:bg-slate-100 rounded text-slate-600"><Edit2 className="w-4 h-4" /></button>
-                                <button onClick={() => toggleStudentActive(s)} className="p-1.5 hover:bg-slate-100 rounded text-amber-600" title="Toggle active"><Power className="w-4 h-4" /></button>
+                              <button onClick={() => openToggleModal(s)} className="p-1.5 hover:bg-slate-100 rounded text-amber-600" title="Toggle active"><Power className="w-4 h-4" /></button>
                             </div>
                         </td>
                     </tr>
@@ -285,7 +308,24 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
                 <form onSubmit={submitStudent} className="space-y-4">
                     <Field label="Full Name" required><Input value={sForm.name} onChange={e => setSForm({ ...sForm, name: e.target.value })} /></Field>
                     <Field label="Email"><Input type="email" value={sForm.email} onChange={e => setSForm({ ...sForm, email: e.target.value })} placeholder="optional" /></Field>
-                    <Field label="Program">
+                    {!editingStudent && (
+    <>
+        <Field label="Program">
+            <Select value={sForm.program} onChange={e => setSForm({ ...sForm, program: e.target.value })}>
+                <option value="">-- Select Program --</option>
+                {programs.map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                ))}
+            </Select>
+        </Field>
+        <Field label="Level">
+            <Select value={sForm.level} onChange={e => setSForm({ ...sForm, level: e.target.value })}>
+                <option>Level 1</option><option>Level 2</option><option>Level 3</option><option>Level 4</option>
+            </Select>
+        </Field>
+    </>
+)}
+                    {/* <Field label="Program">
                         <Select value={sForm.program} onChange={e => setSForm({ ...sForm, program: e.target.value })}>
                             <option value="">-- Select Program --</option>
                             {programs.map(p => (
@@ -297,7 +337,7 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
                         <Select value={sForm.level} onChange={e => setSForm({ ...sForm, level: e.target.value })}>
                             <option>Level 1</option><option>Level 2</option><option>Level 3</option><option>Level 4</option>
                         </Select>
-                    </Field>
+                    </Field> */}
                     <Field label="Password" required={!editingStudent}><Input type="text" value={sForm.password} onChange={e => setSForm({ ...sForm, password: e.target.value })} placeholder={editingStudent ? 'Leave blank to keep current' : 'student123'} /></Field>
                     {!editingStudent && <p className="text-xs text-slate-500 bg-blue-50 p-2 rounded">A registration number will be auto-generated.</p>}
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={sForm.active} onChange={e => setSForm({ ...sForm, active: e.target.checked })} />Active</label>
@@ -339,7 +379,34 @@ export const TechnicianStudent: React.FC<{ toast: string; setToast: (msg: string
                     </div>
                 </div>
             </Modal>
-
+{/* Toggle Active/Inactive Confirmation Modal */}
+<Modal open={showToggleModal} onClose={() => !toggling && setShowToggleModal(false)} title="Confirm Action" size="md">
+    <div className="space-y-4">
+        <p className="text-sm text-slate-600">
+            Are you sure you want to <strong>{toggleStudent?.active ? 'deactivate' : 'activate'}</strong> {toggleStudent?.name}?
+        </p>
+        <div className="bg-amber-50 p-4 rounded-lg">
+            <p className="text-sm text-amber-800">
+                {toggleStudent?.active 
+                    ? 'Deactivated students will not be able to log in to the system.' 
+                    : 'Activated students will be able to log in and access their account.'}
+            </p>
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowToggleModal(false)} disabled={toggling}>
+                Cancel
+            </Button>
+            <Button 
+                variant={toggleStudent?.active ? 'danger' : 'success'} 
+                onClick={confirmToggleActive} 
+                disabled={toggling}
+            >
+                {toggling ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline mr-1" /> : null}
+                Confirm {toggleStudent?.active ? 'Deactivate' : 'Activate'}
+            </Button>
+        </div>
+    </div>
+</Modal>
 
         </div>
     );

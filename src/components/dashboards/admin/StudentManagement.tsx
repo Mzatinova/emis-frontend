@@ -314,12 +314,12 @@ const confirmToggleActive = () => {
             Edit
         </button>
 
-        <button 
+        {/* <button 
     onClick={() => openToggleModal(s)} 
     className={`px-3 py-1.5 rounded text-xs font-medium ${s.active ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white`}
 >
     {s.active ? 'Deactivate' : 'Activate'}
-</button>
+</button> */}
         {/* <button 
             onClick={() => toggleStudentActive(s)} 
             className={`px-3 py-1.5 rounded text-xs font-medium ${s.active ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white`}
@@ -517,7 +517,7 @@ const confirmToggleActive = () => {
                     ))}
                 </div>
             </Modal>
-            <Modal open={showToggleModal} onClose={() => setShowToggleModal(false)} title="Confirm Action" size="md">
+            {/* <Modal open={showToggleModal} onClose={() => setShowToggleModal(false)} title="Confirm Action" size="md">
     <div className="space-y-4">
         <p className="text-sm text-slate-600">
             Are you sure you want to <strong>{toggleStudent?.active ? 'deactivate' : 'activate'}</strong> {toggleStudent?.name}?
@@ -541,7 +541,7 @@ const confirmToggleActive = () => {
             </Button>
         </div>
     </div>
-</Modal>
+</Modal> */}
         </div>
     );
 };

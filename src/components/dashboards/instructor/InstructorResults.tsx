@@ -16,7 +16,9 @@ const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, 
 
     const [selectedClass, setSelectedClass] = useState<any>(null);
     const [search, setSearch] = useState('');
-    const [saving, setSaving] = useState(false);
+    // const [saving, setSaving] = useState(false);
+    const [savingStudents, setSavingStudents] = useState<{ [key: string]: boolean }>({});
+    const [savingAll, setSavingAll] = useState(false);
     const [examValues, setExamValues] = useState<{ [key: string]: string }>({});
     const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
     const [csvOpen, setCsvOpen] = useState(false);
@@ -30,19 +32,6 @@ const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, 
     };
 
     // Get grade and pass/fail
-    // const getGradeAndPassFail = (marks: number, courseName: string) => {
-    //     if (!marks && marks !== 0) return { grade: '—', passFail: '—' };
-
-    //     const passMark = getPassMark(courseName);
-    //     const isPass = marks >= passMark;
-    //     const passFailText = isPass ? 'Pass' : 'Fail';
-
-    //     if (marks >= 75) return { grade: 'A', passFail: passFailText };
-    //     if (marks >= 65) return { grade: 'B', passFail: passFailText };
-    //     if (marks >= 55) return { grade: 'C', passFail: passFailText };
-    //     if (marks >= 50) return { grade: 'D', passFail: passFailText };
-    //     return { grade: 'F', passFail: 'Fail' };
-    // };
 
     const getGradeAndPassFail = (marks: number, courseName: string) => {
         if (!marks && marks !== 0) return { grade: '—', passFail: '—' };
@@ -82,159 +71,52 @@ const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, 
     }, [courses, myAssignedCourses]);
 
     // Get students for selected class using registrations
-//     const studentsInClass = useMemo(() => {
-//     if (!selectedClass) return [];
 
-//     return students.filter(s => {
-//         // Get student's current level number
-//         const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
-        
-//         const hasApprovedRegistration = registrations.some(r => {
-//             let coursesArray = r.courses;
-//             if (typeof r.courses === 'string') {
-//                 try {
-//                     coursesArray = JSON.parse(r.courses);
-//                 } catch (e) {
-//                     coursesArray = [];
-//                 }
-//             }
+    const studentsInClass = useMemo(() => {
+        if (!selectedClass) return [];
 
-//             return String(r.studentId) === String(s.id) &&
-//                 r.registrationStatus === 'approved' &&
-//                 String(r.programName) === String(selectedClass.programName) &&
-//                 String(r.level) === String(selectedClass.level) &&
-//                 coursesArray?.includes(selectedClass.courseName);
-//         });
-        
-//         // Only include if student's current level matches the class level
-//         return s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
-//     });
-// }, [selectedClass, students, registrations]);
+        const activeSession = sessions.find(s => s.active === true);
+        console.log('Active session ID:', activeSession?.id);
+        console.log('Registrations with session IDs:', registrations.map(r => ({
+            studentId: r.studentId,
+            academic_session_id: r.academic_session_id,
+            level: r.level,
+            programName: r.programName,
+            courses: r.courses
+        })));
 
-const studentsInClass = useMemo(() => {
-    if (!selectedClass) return [];
+        return students.filter(s => {
+            const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
 
-    const activeSession = sessions.find(s => s.active === true);
-    console.log('Active session ID:', activeSession?.id);
-    console.log('Registrations with session IDs:', registrations.map(r => ({ 
-        studentId: r.studentId, 
-        academic_session_id: r.academic_session_id,
-        level: r.level,
-        programName: r.programName,
-        courses: r.courses
-    })));
-
-    return students.filter(s => {
-        const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
-        
-        const hasApprovedRegistration = registrations.some(r => {
-            let coursesArray = r.courses;
-            if (typeof r.courses === 'string') {
-                try {
-                    coursesArray = JSON.parse(r.courses);
-                } catch (e) {
-                    coursesArray = [];
+            const hasApprovedRegistration = registrations.some(r => {
+                let coursesArray = r.courses;
+                if (typeof r.courses === 'string') {
+                    try {
+                        coursesArray = JSON.parse(r.courses);
+                    } catch (e) {
+                        coursesArray = [];
+                    }
                 }
-            }
 
-            const sessionMatch = String(r.academic_session_id) === String(activeSession?.id);
-            const programMatch = String(r.programName) === String(selectedClass.programName);
-            const levelMatch = String(r.level) === String(selectedClass.level);
-            const courseMatch = coursesArray?.includes(selectedClass.courseName);
-            const statusMatch = r.registrationStatus === 'approved';
-            const studentMatch = String(r.studentId) === String(s.id);
+                const sessionMatch = String(r.academic_session_id) === String(activeSession?.id);
+                const programMatch = String(r.programName) === String(selectedClass.programName);
+                const levelMatch = String(r.level) === String(selectedClass.level);
+                const courseMatch = coursesArray?.includes(selectedClass.courseName);
+                const statusMatch = r.registrationStatus === 'approved';
+                const studentMatch = String(r.studentId) === String(s.id);
 
-            const allMatch = studentMatch && statusMatch && programMatch && levelMatch && courseMatch && sessionMatch;
-            
-            if (allMatch) {
-                console.log('Student matched:', s.name, 'Session match:', sessionMatch);
-            }
-            return allMatch;
+                const allMatch = studentMatch && statusMatch && programMatch && levelMatch && courseMatch && sessionMatch;
+
+                if (allMatch) {
+                    console.log('Student matched:', s.name, 'Session match:', sessionMatch);
+                }
+                return allMatch;
+            });
+
+            return s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
         });
-        
-        return s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
-    });
-}, [selectedClass, students, registrations, sessions]);
+    }, [selectedClass, students, registrations, sessions]);
 
-// const studentsInClass = useMemo(() => {
-//     if (!selectedClass) return [];
-
-//     console.log('Selected class:', selectedClass);
-//     console.log('All students:', students.map(s => ({ id: s.id, name: s.name, level: s.level, active: s.active })));
-//     console.log('Registrations:', registrations.map(r => ({ 
-//         studentId: r.studentId, 
-//         level: r.level, 
-//         programName: r.programName,
-//         registrationStatus: r.registrationStatus,
-//         courses: r.courses,
-//         academic_session_id: r.academic_session_id
-//     })));
-
-//     return students.filter(s => {
-//         const studentLevelNumber = parseInt(s.level?.match(/\d+/)?.[0] || '1');
-        
-//         const hasApprovedRegistration = registrations.some(r => {
-//             let coursesArray = r.courses;
-//             if (typeof r.courses === 'string') {
-//                 try {
-//                     coursesArray = JSON.parse(r.courses);
-//                 } catch (e) {
-//                     coursesArray = [];
-//                 }
-//             }
-
-//             const match = String(r.studentId) === String(s.id) &&
-//                 r.registrationStatus === 'approved' &&
-//                 String(r.programName) === String(selectedClass.programName) &&
-//                 String(r.level) === String(selectedClass.level) &&
-//                 coursesArray?.includes(selectedClass.courseName);
-            
-//             if (match) {
-//                 console.log('Student matched:', s.name, 'Registration:', r);
-//             }
-//             return match;
-//         });
-        
-//         const result = s.active && hasApprovedRegistration && studentLevelNumber === selectedClass.level;
-//         if (!result && s.level === `Level ${selectedClass.level}`) {
-//             console.log('Student not matched:', s.name, 'hasApprovedRegistration:', hasApprovedRegistration, 'studentLevelNumber:', studentLevelNumber, 'selectedClass.level:', selectedClass.level);
-//         }
-//         return result;
-//     });
-// }, [selectedClass, students, registrations]);
-
-    // const studentsInClass = useMemo(() => {
-    //     if (!selectedClass) return [];
-
-    //     console.log('Selected class level:', selectedClass?.level);
-    // console.log('Student registrations:', registrations.map(r => ({ 
-    //     studentId: r.studentId, 
-    //     level: r.level, 
-    //     programName: r.programName,
-    //     studentLevel: students.find(s => String(s.id) === String(r.studentId))?.level
-    // })));
-
-    //     return students.filter(s => {
-    //         const hasApprovedRegistration = registrations.some(r => {
-    //             // Parse courses if it's a JSON string
-    //             let coursesArray = r.courses;
-    //             if (typeof r.courses === 'string') {
-    //                 try {
-    //                     coursesArray = JSON.parse(r.courses);
-    //                 } catch (e) {
-    //                     coursesArray = [];
-    //                 }
-    //             }
-
-    //             return String(r.studentId) === String(s.id) &&
-    //                 r.registrationStatus === 'approved' &&
-    //                 String(r.programName) === String(selectedClass.programName) &&
-    //                 String(r.level) === String(selectedClass.level) &&
-    //                 coursesArray?.includes(selectedClass.courseName);
-    //         });
-    //         return s.active && hasApprovedRegistration;
-    //     });
-    // }, [selectedClass, students, registrations]);
 
 
     // Get existing results for the selected course and session
@@ -253,36 +135,7 @@ const studentsInClass = useMemo(() => {
         return map;
     }, [results, selectedClass, sessions]);
     //     const existingResultsMap = useMemo(() => {
-    //     const map: { [key: string]: any } = {};
 
-    //     results.forEach(r => {
-    //         if (r.courseName === selectedClass?.courseName) {
-    //             map[r.studentId] = r;
-    //         }
-    //     });
-    //     return map;
-    // }, [results, selectedClass]);
-
-
-    //  const existingResultsMap = useMemo(() => {
-    //     const map: { [key: string]: any } = {};
-    //     const sessionId = sessions[0]?.id;
-
-    //     console.log('All results:', results);
-    // console.log('First result:', results[0]);
-    // console.log('Selected course name:', selectedClass?.courseName);
-    // console.log('Session ID:', sessions[0]?.id);
-    // console.log('Result courseName:', results[0]?.courseName);
-    // console.log('Result sessionId:', results[0]?.sessionId);
-    // console.log('Comparison:', results[0]?.courseName === selectedClass?.courseName);
-
-    //     results.forEach(r => {
-    //         if (r.courseName === selectedClass?.courseName && r.sessionId === sessionId) {
-    //             map[r.studentId] = r;
-    //         }
-    //     });
-    //     return map;
-    // }, [results, selectedClass, sessions]);
 
     // Initialize exam values from existing results
     React.useEffect(() => {
@@ -314,23 +167,17 @@ const studentsInClass = useMemo(() => {
         }
     }, [selectedClass, studentsInClass, existingResultsMap]);
 
-    // Sync examValues with existingResultsMap after refresh
-    // React.useEffect(() => {
-    //     if (selectedClass && studentsInClass.length > 0) {
-    //         const newValues: { [key: string]: string } = {};
-    //         studentsInClass.forEach(s => {
-    //             const existing = existingResultsMap[s.id];
-    //             if (existing && existing.exam !== null) {
-    //                 newValues[s.id] = existing.exam.toString();
-    //             } else if (!examValues[s.id]) {
-    //                 newValues[s.id] = '';
-    //             } else {
-    //                 newValues[s.id] = examValues[s.id];
-    //             }
-    //         });
-    //         setExamValues(prev => ({ ...prev, ...newValues }));
-    //     }
-    // }, [existingResultsMap, selectedClass, studentsInClass]);
+    // ADD THIS CLEANUP EFFECT
+    React.useEffect(() => {
+        return () => {
+            // Clear all state when leaving a class (before new class loads)
+            setExamValues({});
+            setSavedResults({});
+            setEditingStudentId(null);
+            setSearch('');
+        };
+    }, [selectedClass]);
+
 
     React.useEffect(() => {
         if (selectedClass && studentsInClass.length > 0) {
@@ -360,7 +207,8 @@ const studentsInClass = useMemo(() => {
             return;
         }
 
-        setSaving(true);
+        setSavingStudents(prev => ({ ...prev, [studentId]: true }));
+
         try {
             const existing = existingResultsMap[String(studentId)];
 
@@ -375,24 +223,17 @@ const studentsInClass = useMemo(() => {
                     createdBy: currentUser!.id
                 });
             }
-            // await addResult({
-            //     studentId: student.id,
-            //     studentReg: student.regNumber,
-            //     courseName: selectedClass.courseName,
-            //     exam: exam,
-            //     createdBy: currentUser!.id
-            // });
             setEditingStudentId(null);
             setToast('Result saved');
             await refresh();
             await fetchInstructorRegistrations();
         } catch (error) {
             setToast('Failed to save result');
+        } finally {
+            setSavingStudents(prev => ({ ...prev, [studentId]: false }));
         }
-        setSaving(false);
     };
     // const handleSaveResult = async (studentId: string) => {
-
     //     const student = students.find(s => s.id === studentId);
     //     const exam = parseInt(examValues[studentId] || '0');
 
@@ -402,37 +243,34 @@ const studentsInClass = useMemo(() => {
     //         return;
     //     }
 
-    //     const existing = existingResultsMap[String(studentId)];
-    //     const courseId = myCourseIds[0];
-
-
     //     setSaving(true);
     //     try {
+    //         const existing = existingResultsMap[String(studentId)];
+
     //         if (existing) {
     //             await updateResult(existing.id, { exam });
     //         } else {
     //             await addResult({
-    //             studentId: student.id,
-    //             studentReg: student.regNumber,
-    //             courseName: selectedClass.courseName,
-
-    //             exam,
-    //             createdBy: currentUser!.id
-    //         });
+    //                 studentId: student.id,
+    //                 studentReg: student.regNumber,
+    //                 courseName: selectedClass.courseName,
+    //                 exam: exam,
+    //                 createdBy: currentUser!.id
+    //             });
     //         }
+
     //         setEditingStudentId(null);
     //         setToast('Result saved');
-    //       await refresh();
+    //         await refresh();
+    //         await fetchInstructorRegistrations();
     //     } catch (error) {
     //         setToast('Failed to save result');
     //     }
     //     setSaving(false);
     // };
 
-    // Save all results
-
     const handleSaveAll = async () => {
-        setSaving(true);
+        setSavingAll(true);
         let saved = 0;
         let failed = 0;
 
@@ -454,60 +292,53 @@ const studentsInClass = useMemo(() => {
                         createdBy: currentUser!.id
                     });
                 }
-                // await addResult({
-                //     studentId: student.id,
-                //     studentReg: student.regNumber,
-                //     courseName: selectedClass.courseName,
-                //     exam: exam,
-                //     createdBy: currentUser!.id
-                // });
                 saved++;
             } catch (error) {
                 failed++;
             }
         }
 
-        setSaving(false);
+        setSavingAll(false);
         setToast(`Saved: ${saved}, Failed: ${failed}`);
         await refresh();
         await fetchInstructorRegistrations();
     };
-    //     const handleSaveAll = async () => {
-    //         setSaving(true);
-    //         let saved = 0;
-    //         let failed = 0;
+    // const handleSaveAll = async () => {
+    //     setSaving(true);
+    //     let saved = 0;
+    //     let failed = 0;
 
-    //         for (const student of studentsInClass) {
-    //             const exam = parseInt(examValues[student.id] || '0');
-    //             if (exam < 0 || exam > 100) continue;
+    //     for (const student of studentsInClass) {
+    //         const exam = parseInt(examValues[student.id] || '0');
+    //         if (exam < 0 || exam > 100) continue;
 
-    //             const existing = existingResultsMap[student.id];
-    //             const courseId = myCourseIds[0];
+    //         try {
+    //             const existing = existingResultsMap[String(student.id)];
 
-
-    //             try {
-    //                 if (existing) {
-    //                     await updateResult(existing.id, { exam });
-    //                 } else {
-    //                    await addResult({
-    //     studentId: student.id,
-    //     studentReg: student.regNumber,
-    //     courseName: selectedClass.courseName,
-
-    //     exam,
-    //     createdBy: currentUser!.id
-    // });
-    //                 }
-    //                 saved++;
-    //             } catch (error) {
-    //                 failed++;
+    //             if (existing) {
+    //                 await updateResult(existing.id, { exam });
+    //             } else {
+    //                 await addResult({
+    //                     studentId: student.id,
+    //                     studentReg: student.regNumber,
+    //                     courseName: selectedClass.courseName,
+    //                     exam: exam,
+    //                     createdBy: currentUser!.id
+    //                 });
     //             }
-    //         }
 
-    //         setSaving(false);
-    //         setToast(`Saved: ${saved}, Failed: ${failed}`);
-    //         await refresh();
-    //     };
+    //             saved++;
+    //         } catch (error) {
+    //             failed++;
+    //         }
+    //     }
+
+    //     setSaving(false);
+    //     setToast(`Saved: ${saved}, Failed: ${failed}`);
+    //     await refresh();
+    //     await fetchInstructorRegistrations();
+    // };
+
 
     // Handle CSV upload
     const handleCsvUpload = async () => {
@@ -567,15 +398,7 @@ const studentsInClass = useMemo(() => {
                 });
             });
     }, [myAssignedCourses, students, registrations, sessions]);
-    // const assignedBoxes = useMemo(() => {
-    //     return myAssignedCourses.map(course => ({
-    //         id: `${course.courseName}-${course.level}`,
-    //         courseName: course.courseName,
-    //         level: course.level,
-    //         programName: course.programName,
-    //         fullName: `${course.courseName} - Level ${course.level}`
-    //     }));
-    // }, [myAssignedCourses]);
+
 
     // Filter students by search
     const filteredStudents = studentsInClass.filter(s =>
@@ -608,7 +431,20 @@ const studentsInClass = useMemo(() => {
                             {/* <Button variant="secondary" onClick={() => setCsvOpen(true)}>
                                 <Upload className="w-4 h-4 inline mr-1" />CSV Upload
                             </Button> */}
-                            <Button onClick={handleSaveAll} disabled={saving} variant="primary">
+                            <Button onClick={handleSaveAll} disabled={savingAll} variant="primary">
+                                {savingAll ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline mr-1" />
+                                        Saving All...
+                                    </>
+                                ) : (
+                                    <>
+                                        <SaveAll className="w-4 h-4 inline mr-1" />
+                                        Save All
+                                    </>
+                                )}
+                            </Button>
+                            {/* <Button onClick={handleSaveAll} disabled={saving} variant="primary">
                                 {saving ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline mr-1" />
@@ -620,11 +456,8 @@ const studentsInClass = useMemo(() => {
                                         Save All
                                     </>
                                 )}
-                            </Button>
-                            {/* <Button onClick={handleSaveAll} disabled={saving} variant="primary">
-                                <SaveAll className="w-4 h-4 inline mr-1" />
-                                Save All
                             </Button> */}
+
                         </div>
                     }
                 />
@@ -718,20 +551,12 @@ const studentsInClass = useMemo(() => {
                                                         </button>
                                                     ) : (
                                                         examValues[s.id] && (
-                                                            // <button
-                                                            //     onClick={() => handleSaveResult(s.id)}
-                                                            //     disabled={saving}
-                                                            //     className="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700 flex items-center gap-1"
-                                                            // >
-                                                            //     <Save className="w-3 h-3" />
-                                                            //     Save
-                                                            // </button>
                                                             <button
                                                                 onClick={() => handleSaveResult(s.id)}
-                                                                disabled={saving}
+                                                                disabled={savingStudents[s.id]}
                                                                 className="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1"
                                                             >
-                                                                {saving ? (
+                                                                {savingStudents[s.id] ? (
                                                                     <>
                                                                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                                                         Saving...
@@ -743,6 +568,23 @@ const studentsInClass = useMemo(() => {
                                                                     </>
                                                                 )}
                                                             </button>
+                                                            // <button
+                                                            //     onClick={() => handleSaveResult(s.id)}
+                                                            //     disabled={saving}
+                                                            //     className="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1"
+                                                            // >
+                                                            //     {saving ? (
+                                                            //         <>
+                                                            //             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                            //             Saving...
+                                                            //         </>
+                                                            //     ) : (
+                                                            //         <>
+                                                            //             <Save className="w-3 h-3" />
+                                                            //             Save
+                                                            //         </>
+                                                            //     )}
+                                                            // </button>
                                                         )
                                                     )}
                                                 </>
