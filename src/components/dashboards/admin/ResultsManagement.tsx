@@ -10,7 +10,7 @@ interface ResultsManagementProps {
 }
 
 const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }) => {
-    const { currentUser, students, courses, results, updateResult, approveResult } = useEMIS();
+    const { currentUser, students, courses, results, updateResult, approveResult, sessions } = useEMIS();
     // const { getStudentRegistrations } = useRegistration();
     // const { invoices } = useRegistration();
     const { invoices, fetchInvoices } = useRegistration();
@@ -29,6 +29,13 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
     const [publishConfirmModal, setPublishConfirmModal] = useState(false);
     const [publishTarget, setPublishTarget] = useState<{ id: string; studentId: string; studentName: string; resultsCount: number } | null>(null);
 
+    const [activeResultsTab, setActiveResultsTab] = useState<'current' | 'history'>('current');
+    const [selectedHistorySession, setSelectedHistorySession] = useState<string>('');
+    const [sessionSearch, setSessionSearch] = useState('');
+    const [sessionPage, setSessionPage] = useState(1);
+    const sessionPageSize = 20;
+
+    const currentSession = sessions.find(s => s.active === true);
 
 
     // Get unique programs from students
@@ -131,17 +138,79 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
         }
     };
 
-    const filteredResults = useMemo(() => results.filter(r => {
-        const student = students.find(s => String(s.id) === String(r.studentId));
-        const searchTerm = filters.search.toLowerCase().trim();
-        return (
-            (!filters.search ||
-                (student?.regNumber || '').toLowerCase().includes(searchTerm) ||
-                (student?.name || '').toLowerCase().includes(searchTerm)) &&
-            (!filters.programName || (student?.program || '').toLowerCase() === filters.programName.toLowerCase()) &&
-            (!filters.level || (student?.level || '').toLowerCase() === filters.level.toLowerCase())
+    // Get sessions that have results
+    // Get sessions that have results (excluding current session for history)
+const sessionsWithResults = useMemo(() => {
+    const sessionIds = new Set(results.map(r => String(r.academic_session_id)).filter(Boolean));
+    return sessions.filter(s => {
+        // Exclude current session from history dropdown
+        if (currentSession && String(s.id) === String(currentSession.id)) return false;
+        return sessionIds.has(String(s.id));
+    });
+}, [sessions, results, currentSession]);
+// const sessionsWithResults = useMemo(() => {
+//     const sessionIds = new Set(results.map(r => String(r.academic_session_id)).filter(Boolean));
+//     return sessions.filter(s => sessionIds.has(String(s.id)));
+// }, [sessions, results]);
+
+// Filter sessions by search
+const filteredSessions = useMemo(() => {
+    let filtered = sessionsWithResults;
+    if (sessionSearch) {
+        const searchLower = sessionSearch.toLowerCase();
+        filtered = filtered.filter(s => 
+            s.year.toLowerCase().includes(searchLower) ||
+            (s.start_date && new Date(s.start_date).toLocaleDateString('en-GB').includes(searchLower)) ||
+            (s.end_date && new Date(s.end_date).toLocaleDateString('en-GB').includes(searchLower))
         );
-    }), [results, filters, students]);
+    }
+    return filtered;
+}, [sessionsWithResults, sessionSearch]);
+
+const paginatedSessions = useMemo(() => {
+    const start = (sessionPage - 1) * sessionPageSize;
+    return filteredSessions.slice(start, start + sessionPageSize);
+}, [filteredSessions, sessionPage]);
+
+const totalSessionPages = Math.ceil(filteredSessions.length / sessionPageSize);
+
+// Filter results by session
+const currentSessionResults = useMemo(() => {
+    if (!currentSession) return [];
+    return results.filter(r => String(r.academic_session_id) === String(currentSession.id));
+}, [results, currentSession]);
+
+const historySessionResults = useMemo(() => {
+    if (!selectedHistorySession) return [];
+    return results.filter(r => String(r.academic_session_id) === selectedHistorySession);
+}, [results, selectedHistorySession]);
+
+// Use appropriate results based on tab
+const activeResults = activeResultsTab === 'current' ? currentSessionResults : historySessionResults;
+
+const filteredResults = useMemo(() => activeResults.filter(r => {
+    const student = students.find(s => String(s.id) === String(r.studentId));
+    const searchTerm = filters.search.toLowerCase().trim();
+    return (
+        (!filters.search ||
+            (student?.regNumber || '').toLowerCase().includes(searchTerm) ||
+            (student?.name || '').toLowerCase().includes(searchTerm)) &&
+        (!filters.programName || (student?.program || '').toLowerCase() === filters.programName.toLowerCase()) &&
+        (!filters.level || (student?.level || '').toLowerCase() === filters.level.toLowerCase())
+    );
+}), [activeResults, filters, students]);
+
+    // const filteredResults = useMemo(() => results.filter(r => {
+    //     const student = students.find(s => String(s.id) === String(r.studentId));
+    //     const searchTerm = filters.search.toLowerCase().trim();
+    //     return (
+    //         (!filters.search ||
+    //             (student?.regNumber || '').toLowerCase().includes(searchTerm) ||
+    //             (student?.name || '').toLowerCase().includes(searchTerm)) &&
+    //         (!filters.programName || (student?.program || '').toLowerCase() === filters.programName.toLowerCase()) &&
+    //         (!filters.level || (student?.level || '').toLowerCase() === filters.level.toLowerCase())
+    //     );
+    // }), [results, filters, students]);
 
     const pendingStudentsCount = useMemo(() => {
         const studentsWithPendingResults = new Set();
@@ -216,32 +285,32 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
 
     // Get unique levels from students (dynamically)
     const levels = useMemo(() => {
-    const levelSet = new Set<string>();
-    students.forEach(s => {
-        if (s.level) {
-            // Convert to string and clean up
-            let levelValue = String(s.level).trim();
-            
-            // If it's just a number like "1", convert to "Level 1"
-            if (levelValue.match(/^\d+$/)) {
-                levelValue = `Level ${levelValue}`;
+        const levelSet = new Set<string>();
+        students.forEach(s => {
+            if (s.level) {
+                // Convert to string and clean up
+                let levelValue = String(s.level).trim();
+
+                // If it's just a number like "1", convert to "Level 1"
+                if (levelValue.match(/^\d+$/)) {
+                    levelValue = `Level ${levelValue}`;
+                }
+                // If it's already "Level 1", keep as is
+                // If it's "level 1" (lowercase), capitalize it
+                else if (levelValue.toLowerCase().startsWith('level')) {
+                    levelValue = levelValue.charAt(0).toUpperCase() + levelValue.slice(1).toLowerCase();
+                }
+
+                levelSet.add(levelValue);
             }
-            // If it's already "Level 1", keep as is
-            // If it's "level 1" (lowercase), capitalize it
-            else if (levelValue.toLowerCase().startsWith('level')) {
-                levelValue = levelValue.charAt(0).toUpperCase() + levelValue.slice(1).toLowerCase();
-            }
-            
-            levelSet.add(levelValue);
-        }
-    });
-    // Sort numerically by the level number
-    return Array.from(levelSet).sort((a, b) => {
-        const numA = parseInt((a as string).replace('Level ', ''));
-        const numB = parseInt((b as string).replace('Level ', ''));
-        return numA - numB;
-    });
-}, [students]);
+        });
+        // Sort numerically by the level number
+        return Array.from(levelSet).sort((a, b) => {
+            const numA = parseInt((a as string).replace('Level ', ''));
+            const numB = parseInt((b as string).replace('Level ', ''));
+            return numA - numB;
+        });
+    }, [students]);
     // const levels = useMemo(() => {
     //     const levelSet = new Set();
     //     students.forEach(s => {
@@ -258,16 +327,54 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
                 title="Results Management"
                 subtitle="Edit, publish, and manage student results"
                 action={
-                    <div className="flex gap-2">
-                        <Button variant="primary" onClick={() => setShowBulkModal(true)} disabled={publishStatusFilter === 'published'} >
-                            <Layers className="w-4 h-4 inline mr-1" />
-                            {publishButtonLabel}
-                        </Button>
-                    </div>
-                }
+    activeResultsTab === 'current' && (
+        <div className="flex gap-2">
+            <Button variant="primary" onClick={() => setShowBulkModal(true)} disabled={publishStatusFilter === 'published'} >
+                <Layers className="w-4 h-4 inline mr-1" />
+                {publishButtonLabel}
+            </Button>
+        </div>
+    )
+}
+                // action={
+                //     <div className="flex gap-2">
+                //         <Button variant="primary" onClick={() => setShowBulkModal(true)} disabled={publishStatusFilter === 'published'} >
+                //             <Layers className="w-4 h-4 inline mr-1" />
+                //             {publishButtonLabel}
+                //         </Button>
+                //     </div>
+                // }
             />
-
-            {/* Filters */}
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-slate-200 mb-4">
+                <button
+                    onClick={() => {
+                        setActiveResultsTab('current');
+                        setSelectedHistorySession('');
+                    }}
+                    className={`px-4 py-2 text-sm font-medium transition ${activeResultsTab === 'current'
+                        ? 'border-b-2 border-emerald-600 text-emerald-600'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    Current Session {currentSession ? `(${currentSession.year})` : ''}
+                </button>
+                <button
+                    onClick={() => {
+                        setActiveResultsTab('history');
+                        setSelectedHistorySession('');
+                        setSessionSearch('');
+                        setSessionPage(1);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition ${activeResultsTab === 'history'
+                        ? 'border-b-2 border-emerald-600 text-emerald-600'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    History
+                </button>
+            </div>
+         
             {/* Filters */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4 space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -297,12 +404,74 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
             </div>
 
             {/* Statistics Bar */}
-            <div className="bg-slate-100 rounded-xl p-3 mb-4 flex justify-between items-center">
-                <div className="bg-slate-100 rounded-xl p-3 mb-4">
-                    <span className="text-sm text-slate-600">Ready to publish: <strong>{pendingStudentsCount}</strong> students</span>
+          {activeResultsTab === 'current' && (
+    <div className="bg-slate-100 rounded-xl p-3 mb-4 flex justify-between items-center">
+        <div className="bg-slate-100 rounded-xl p-3 mb-4">
+            <span className="text-sm text-slate-600">Ready to publish: <strong>{pendingStudentsCount}</strong> students</span>
+        </div>
+    </div>
+)}
+
+                        {/* History Session Selector */}
+            {activeResultsTab === 'history' && (
+                <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Select Academic Session
+                    </label>
+                    <div className="relative mb-2">
+                        <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                        <Input
+                            placeholder="Search sessions..."
+                            value={sessionSearch}
+                            onChange={e => {
+                                setSessionSearch(e.target.value);
+                                setSessionPage(1);
+                            }}
+                            className="pl-9"
+                        />
+                    </div>
+                    <Select 
+                        value={selectedHistorySession}
+                        onChange={e => {
+                            setSelectedHistorySession(e.target.value);
+                            setFilters({ search: '', programName: '', level: '', status: '' });
+                            setPublishStatusFilter('all');
+                        }}
+                        className="w-full"
+                    >
+                        <option value="">-- Select a Session --</option>
+                        {paginatedSessions.map(session => {
+                            const start = session.start_date ? new Date(session.start_date).toLocaleDateString('en-GB') : '?';
+                            const end = session.end_date ? new Date(session.end_date).toLocaleDateString('en-GB') : '?';
+                            const resultCount = results.filter(r => String(r.academic_session_id) === String(session.id)).length;
+                            return (
+                                <option key={session.id} value={session.id}>
+                                    {session.year} ({start} - {end}) - {resultCount} results
+                                </option>
+                            );
+                        })}
+                    </Select>
+                    {totalSessionPages > 1 && (
+                        <div className="flex justify-center gap-2 mt-2">
+                            <button
+                                onClick={() => setSessionPage(p => Math.max(1, p - 1))}
+                                disabled={sessionPage === 1}
+                                className="px-2 py-1 text-xs bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+                            <span className="text-xs">Page {sessionPage} of {totalSessionPages}</span>
+                            <button
+                                onClick={() => setSessionPage(p => Math.min(totalSessionPages, p + 1))}
+                                disabled={sessionPage === totalSessionPages}
+                                className="px-2 py-1 text-xs bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
-                {/* <span className="text-sm text-slate-600">Total results: <strong>{filteredResults.length}</strong></span> */}
-            </div>
+            )}
 
             {/* Results Table */}
             <Table
@@ -385,7 +554,8 @@ const ResultsManagement: React.FC<ResultsManagementProps> = ({ toast, setToast }
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
-                                            {canPublish && (
+                                            {/* {canPublish && ( */}
+                                            {canPublish && activeResultsTab === 'current' && (
                                                 <button
                                                     onClick={() => {
                                                         const pendingResults = [group.practical, group.occupation, group.fundamentals].filter(r => r && r.status === 'pending');

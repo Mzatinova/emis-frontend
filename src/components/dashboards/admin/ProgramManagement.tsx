@@ -39,6 +39,9 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
     const [selectedCourse, setSelectedCourse] = useState<ProgramCourse | null>(null);
     const [selectedLevel, setSelectedLevel] = useState<number>(1);
     const [selectedInstructorId, setSelectedInstructorId] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletingProgram, setDeletingProgram] = useState<Program | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
 
     // const fetchPrograms = async () => {
@@ -120,48 +123,70 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
         }
     };
 
-    const deleteProgram = async (id: string) => {
-        if (confirm('Delete this program? All student assignments will be lost.')) {
-            try {
-                await apiRequest(`/programs/${id}`, 'DELETE');
-                // await fetchPrograms();
-                await fetchProgramsGlobal();
-                setToast('Program deleted');
-            } catch (error) {
-                console.error('Failed to delete program:', error);
-                setToast('Failed to delete program');
-            }
+    const openDeleteModal = (program: Program) => {
+        setDeletingProgram(program);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteProgram = async () => {
+        if (!deletingProgram) return;
+        setDeleting(true);
+        try {
+            await apiRequest(`/programs/${deletingProgram.id}`, 'DELETE');
+            await fetchProgramsGlobal();
+            setToast('Program deleted');
+            setShowDeleteModal(false);
+            setDeletingProgram(null);
+        } catch (error) {
+            console.error('Failed to delete program:', error);
+            setToast('Failed to delete program');
+        } finally {
+            setDeleting(false);
         }
     };
+
+    // const deleteProgram = async (id: string) => {
+    //     if (confirm('Delete this program? All student assignments will be lost.')) {
+    //         try {
+    //             await apiRequest(`/programs/${id}`, 'DELETE');
+    //             // await fetchPrograms();
+    //             await fetchProgramsGlobal();
+    //             setToast('Program deleted');
+    //         } catch (error) {
+    //             console.error('Failed to delete program:', error);
+    //             setToast('Failed to delete program');
+    //         }
+    //     }
+    // };
 
     const openAssignInstructor = (program: Program, level: number, course: ProgramCourse) => {
         setSelectedProgram(program);
         setSelectedLevel(level);
         setSelectedCourse(course);
-         setSelectedInstructorId(course.instructorId);
+        setSelectedInstructorId(course.instructorId);
         setAssignInstructorModal(true);
     };
 
     const saveInstructorAssignment = async (instructorId: string | null) => {
-    if (!selectedProgram || !selectedCourse) return;
-    setAssigning(true);
-    try {
-        await apiRequest(`/programs/${selectedProgram.id}/assign`, 'POST', {
-            level: selectedCourse.level,
-            course_name: selectedCourse.courseName,
-            instructor_id: instructorId
-        });
-        await fetchProgramsGlobal();
-        setToast(`Instructor assigned to ${selectedCourse.courseName} (Level ${selectedCourse.level})`);
-        setAssignInstructorModal(false);
-        setSelectedInstructorId(''); // Reset
-    } catch (error) {
-        console.error('Failed to assign instructor:', error);
-        setToast('Failed to assign instructor');
-    } finally {
-        setAssigning(false);
-    }
-};
+        if (!selectedProgram || !selectedCourse) return;
+        setAssigning(true);
+        try {
+            await apiRequest(`/programs/${selectedProgram.id}/assign`, 'POST', {
+                level: selectedCourse.level,
+                course_name: selectedCourse.courseName,
+                instructor_id: instructorId
+            });
+            await fetchProgramsGlobal();
+            setToast(`Instructor assigned to ${selectedCourse.courseName} (Level ${selectedCourse.level})`);
+            setAssignInstructorModal(false);
+            setSelectedInstructorId(''); // Reset
+        } catch (error) {
+            console.error('Failed to assign instructor:', error);
+            setToast('Failed to assign instructor');
+        } finally {
+            setAssigning(false);
+        }
+    };
 
     // const saveInstructorAssignment = async (instructorId: string | null) => {
     //     if (!selectedProgram || !selectedCourse) return;
@@ -251,12 +276,19 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
+
                                             <button
-                                                onClick={() => deleteProgram(program.id)}
+                                                onClick={() => openDeleteModal(program)}
                                                 className="p-1.5 hover:bg-red-100 rounded text-red-600"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
+                                            {/* <button
+                                                onClick={() => deleteProgram(program.id)}
+                                                className="p-1.5 hover:bg-red-100 rounded text-red-600"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button> */}
                                         </div>
                                         {expandedProgram === program.id ? (
                                             <ChevronUp className="w-5 h-5 text-slate-400" />
@@ -339,50 +371,71 @@ const ProgramManagement: React.FC<ProgramManagementProps> = ({ toast, setToast }
                 </form>
             </Modal>
 
-         <Modal open={assignInstructorModal} onClose={() => !assigning && setAssignInstructorModal(false)} title={`Assign Instructor - ${selectedCourse?.courseName} (Level ${selectedLevel})`}>
-    <div className="space-y-4">
-        <p className="text-sm text-slate-600">Select instructor for {selectedProgram?.name} - Level {selectedLevel} {selectedCourse?.courseName}</p>
-        
-        <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Instructor</label>
-            <Select
-               value={selectedInstructorId || ''}
-                onChange={(e) => {
-                    // Store selected value in state instead of saving immediately
-                    setSelectedInstructorId(e.target.value || null);
-                }}
-                disabled={assigning}
-            >
-                <option value="">-- None assigned --</option>
-                {instructors.map(i => (
-                    <option key={i.id} value={i.id}>{i.name}</option>
-                ))}
-            </Select>
-        </div>
-        
-        <div className="flex justify-end gap-2 pt-4">
-            <Button 
-                type="button" 
-                variant="secondary" 
-                onClick={() => {
-                    setAssignInstructorModal(false);
-                    setSelectedInstructorId('');
-                }} 
-                disabled={assigning}
-            >
-                Cancel
-            </Button>
-            <Button 
-                type="button" 
-                onClick={() => saveInstructorAssignment(selectedInstructorId)}
-                disabled={assigning}
-            >
-                {assigning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
-                Confirm Assign
-            </Button>
-        </div>
-    </div>
-</Modal>
+            <Modal open={assignInstructorModal} onClose={() => !assigning && setAssignInstructorModal(false)} title={`Assign Instructor - ${selectedCourse?.courseName} (Level ${selectedLevel})`}>
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-600">Select instructor for {selectedProgram?.name} - Level {selectedLevel} {selectedCourse?.courseName}</p>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-700">Instructor</label>
+                        <Select
+                            value={selectedInstructorId || ''}
+                            onChange={(e) => {
+                                // Store selected value in state instead of saving immediately
+                                setSelectedInstructorId(e.target.value || null);
+                            }}
+                            disabled={assigning}
+                        >
+                            <option value="">-- None assigned --</option>
+                            {instructors.map(i => (
+                                <option key={i.id} value={i.id}>{i.name}</option>
+                            ))}
+                        </Select>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                                setAssignInstructorModal(false);
+                                setSelectedInstructorId('');
+                            }}
+                            disabled={assigning}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => saveInstructorAssignment(selectedInstructorId)}
+                            disabled={assigning}
+                        >
+                            {assigning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                            Confirm Assign
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+            <Modal open={showDeleteModal} onClose={() => !deleting && setShowDeleteModal(false)} title="Confirm Delete" size="md">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-600">
+                        Are you sure you want to delete <strong>{deletingProgram?.name}</strong>?
+                    </p>
+                    <div className="bg-red-50 p-4 rounded-lg">
+                        <p className="text-sm text-red-800">
+                            This action cannot be undone. All courses and assignments for this program will be permanently deleted.
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
+                            Cancel
+                        </Button>
+                        <Button variant="danger" onClick={confirmDeleteProgram} disabled={deleting}>
+                            {deleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                            Confirm Delete
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

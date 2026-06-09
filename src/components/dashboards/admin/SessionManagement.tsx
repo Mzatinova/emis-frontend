@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useEMIS } from '@/contexts/EMISContext';
 import { PageHeader, Badge, Modal, Field, Input, Button, Table, Toast } from '@/components/shared/UI';
-import { Plus, Edit2, X } from 'lucide-react';
+import { Plus, Edit2, X, Loader2 } from 'lucide-react';
 
 const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => void }> = ({ toast, setToast }) => {
     const { sessions, addSession, updateSession, apiRequest, refresh } = useEMIS();
@@ -17,6 +17,11 @@ const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => vo
     const [editEndDate, setEditEndDate] = useState('');
     const [sessForm, setSessForm] = useState({ year: '', start_date: '', end_date: '', active: true });
 
+    const [showCloseRegModal, setShowCloseRegModal] = useState(false);
+    const [closeRegSession, setCloseRegSession] = useState<any>(null);
+    const [showEndSessionModal, setShowEndSessionModal] = useState(false);
+    const [endSessionTarget, setEndSessionTarget] = useState<any>(null);
+    const [processing, setProcessing] = useState(false);
     const convertToYMD = (dateStr: string) => {
         if (!dateStr) return '';
         let parts = dateStr.split('/');
@@ -137,6 +142,55 @@ const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => vo
         }
     };
 
+    const openCloseRegModal = (session: any) => {
+        setCloseRegSession(session);
+        setShowCloseRegModal(true);
+    };
+
+    const confirmCloseRegistration = async () => {
+        if (!closeRegSession) return;
+        setProcessing(true);
+        try {
+            await apiRequest(`/sessions/${closeRegSession.id}/close-registration`, 'POST');
+            await refresh();
+            setToast('Registration closed successfully');
+            setShowCloseRegModal(false);
+            setCloseRegSession(null);
+        } catch (error) {
+            setToast('Failed to close registration');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const openEndSessionModal = (session: any) => {
+        setEndSessionTarget(session);
+        setShowEndSessionModal(true);
+    };
+
+  const confirmEndSession = async () => {
+    if (!endSessionTarget) return;
+    setProcessing(true);
+    try {
+        // If registration is open, close it first
+        if (endSessionTarget.registration_open) {
+            await apiRequest(`/sessions/${endSessionTarget.id}/close-registration`, 'POST');
+            setToast('Registration closed automatically');
+        }
+        
+        // Then end the session
+        await updateSession(endSessionTarget.id, { active: false });
+        await refresh();
+        setToast('Session ended');
+        setShowEndSessionModal(false);
+        setEndSessionTarget(null);
+    } catch (error) {
+        setToast('Failed to end session');
+    } finally {
+        setProcessing(false);
+    }
+};
+
     return (
         <div>
             {toast && <Toast message={toast} onClose={() => setToast('')} />}
@@ -184,6 +238,44 @@ const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => vo
                         </td>
                         <td className="px-4 py-3">
                             {s.active ? (
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => openEditModal(s)}
+                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
+                                    >
+                                        Edit
+                                    </button>
+                                    {/* Close Registration Button */}
+                                    {s.registration_open ? (
+                                        <button
+                                            onClick={() => openCloseRegModal(s)}
+                                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium"
+                                        >
+                                            Close Registration
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => openRegModal(s)}
+                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium"
+                                        >
+                                            Open Registration
+                                        </button>
+                                    )}
+
+                                    {/* End Session Button */}
+                                    <button
+                                        onClick={() => openEndSessionModal(s)}
+                                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
+                                    >
+                                        End Session
+                                    </button>
+                                </div>
+                            ) : (
+                                <span className="text-slate-400 text-xs">Inactive</span>
+                            )}
+                        </td>
+                        {/* <td className="px-4 py-3">
+                            {s.active ? (
                                 <div className="flex gap-2">
                                     <button onClick={() => openEditModal(s)} className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Edit Session">
                                         <Edit2 className="w-4 h-4" />
@@ -226,7 +318,7 @@ const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => vo
                             ) : (
                                 <span className="text-slate-300 text-xs">Closed</span>
                             )}
-                        </td>
+                        </td> */}
                     </tr>
                 ))}
             </Table>
@@ -319,6 +411,56 @@ const SessionManagement: React.FC<{ toast: string; setToast: (msg: string) => vo
                     </div>
                 </form>
             </Modal>
+            {/* Close Registration Confirmation Modal */}
+            <Modal open={showCloseRegModal} onClose={() => !processing && setShowCloseRegModal(false)} title="Confirm Close Registration" size="md">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-600">
+                        Are you sure you want to close registration for <strong>{closeRegSession?.year}</strong>?
+                    </p>
+                    <div className="bg-amber-50 p-4 rounded-lg">
+                        <p className="text-sm text-amber-800">
+                            Students will not be able to register for this session after registration is closed.
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="secondary" onClick={() => setShowCloseRegModal(false)} disabled={processing}>
+                            Cancel
+                        </Button>
+                        <Button variant="danger" onClick={confirmCloseRegistration} disabled={processing}>
+                            {processing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                            Confirm Close
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* End Session Confirmation Modal */}
+          <Modal open={showEndSessionModal} onClose={() => !processing && setShowEndSessionModal(false)} title="Confirm End Session" size="md">
+    <div className="space-y-4">
+        <p className="text-sm text-slate-600">
+            Are you sure you want to end <strong>{endSessionTarget?.year}</strong>?
+        </p>
+        <div className="bg-red-50 p-4 rounded-lg">
+            <p className="text-sm text-red-800">
+                This will deactivate the session. A new session can be created after ending this one.
+                {endSessionTarget?.registration_open && (
+                    <span className="block mt-2 font-semibold">
+                        Note: Registration is currently open and will be closed automatically.
+                    </span>
+                )}
+            </p>
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowEndSessionModal(false)} disabled={processing}>
+                Cancel
+            </Button>
+            <Button variant="danger" onClick={confirmEndSession} disabled={processing}>
+                {processing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                Confirm End
+            </Button>
+        </div>
+    </div>
+</Modal>
         </div>
     );
 };

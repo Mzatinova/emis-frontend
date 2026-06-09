@@ -83,9 +83,9 @@ const AppLayout: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="p-2 hover:bg-slate-100 rounded-lg relative">
+            {/* <button className="p-2 hover:bg-slate-100 rounded-lg relative">
               <Bell className="w-5 h-5 text-slate-600" />
-            </button>
+            </button> */}
             <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-200">
               <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center text-sm font-bold">{currentUser.name.charAt(0)}</div>
               <div>
