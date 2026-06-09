@@ -45,10 +45,19 @@ const AccountsFees: React.FC = () => {
     const [deleting, setDeleting] = useState(false);
 
     // Filter fee structures by current session
-    const currentSessionFees = useMemo(() => {
-        if (!currentSession) return feeStructuresList || [];
-        return (feeStructuresList || []).filter(fee => String(fee.academic_session_id) === String(currentSession.id));
-    }, [feeStructuresList, currentSession]);
+    // Filter fee structures by current session
+const currentSessionFees = useMemo(() => {
+    // If no active session, show empty array (nothing for current session)
+    if (!currentSession) return [];
+    // Only show fee structures that belong to the current session
+    return (feeStructuresList || []).filter(fee => 
+        fee.academic_session_id && String(fee.academic_session_id) === String(currentSession.id)
+    );
+}, [feeStructuresList, currentSession]);
+    // const currentSessionFees = useMemo(() => {
+    //     if (!currentSession) return feeStructuresList || [];
+    //     return (feeStructuresList || []).filter(fee => String(fee.academic_session_id) === String(currentSession.id));
+    // }, [feeStructuresList, currentSession]);
 
     // Get all previous sessions (not current)
     const previousSessions = useMemo(() => {
@@ -236,13 +245,25 @@ const confirmDeleteFee = async () => {
                 title="Fee Structure"
                 subtitle={activeTab === 'current' ? `Current Session: ${currentSession?.year || 'No active session'}` : "Previous Sessions History"}
                 action={
-                    activeTab === 'current' && (
-                        <Button onClick={() => openFeeModal()}>
-                            <DollarSign className="w-4 h-4 inline mr-1" />
-                            Add Fee Structure
-                        </Button>
-                    )
-                }
+    activeTab === 'current' && (
+        <Button 
+            onClick={() => openFeeModal()} 
+            disabled={!currentSession}
+            title={!currentSession ? "Please activate an academic session first" : "Add fee structure for current session"}
+        >
+            <DollarSign className="w-4 h-4 inline mr-1" />
+            Add Fee Structure
+        </Button>
+    )
+}
+                // action={
+                //     activeTab === 'current' && (
+                //         <Button onClick={() => openFeeModal()}>
+                //             <DollarSign className="w-4 h-4 inline mr-1" />
+                //             Add Fee Structure
+                //         </Button>
+                //     )
+                // }
             />
 
             {/* Tabs */}
@@ -279,13 +300,24 @@ const confirmDeleteFee = async () => {
             </div>
 
             {/* Current Session View */}
-            {activeTab === 'current' && (
+            {/* {activeTab === 'current' && (
                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
                     {currentSessionFees.length === 0 ? (
                         <div className="text-center py-12 text-slate-500">
                             No fee structures set for current session ({currentSession?.year})
                         </div>
-                    ) : (
+                    ) : ( */}
+                    {activeTab === 'current' && (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        {!currentSession ? (
+            <div className="text-center py-12 text-amber-600">
+                No active academic session. Please activate a session first.
+            </div>
+        ) : currentSessionFees.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+                No fee structures set for current session ({currentSession?.year})
+            </div>
+        ) : (
                         <Table headers={['Program', 'Level', 'Full Level Fee', 'Per Course Fee', 'Actions']} rowCount={currentSessionFees.length}>
                             {currentSessionFees.map((fee: FeeStructure) => (
                                 <tr key={fee.id} className="hover:bg-slate-50">
