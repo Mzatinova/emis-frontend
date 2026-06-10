@@ -358,8 +358,8 @@ const ResultHistory: React.FC<ResultHistoryProps> = ({ toast, setToast }) => {
                                                         <div className="flex items-center gap-3 flex-wrap">
                                                             <span className="font-medium text-slate-800">{level}</span>
                                                             <div className="flex gap-2 text-xs">
-                                                                <span className="text-green-600">✓ {stats.passed}</span>
-                                                                <span className="text-red-600">✗ {stats.failed}</span>
+                                                                <span className="text-green-600"> Passed: {stats.passed}</span>
+                                                                <span className="text-red-600"> Failed: {stats.failed}</span>
                                                                 <span className="text-slate-400">No Results: {stats.noResults}</span>
                                                             </div>
                                                             <Badge status={stats.passRate >= 70 ? 'success' : stats.passRate >= 50 ? 'warning' : 'error'}>
