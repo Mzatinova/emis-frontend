@@ -39,6 +39,10 @@ const AccountsFees: React.FC = () => {
     const [programSearch, setProgramSearch] = useState('');
     const sessionPageSize = 20;
 
+    const [selectedProgramIds, setSelectedProgramIds] = useState<Set<string>>(new Set());
+    const [selectedLevels, setSelectedLevels] = useState<Set<number>>(new Set());
+    const [showAdvancedModal, setShowAdvancedModal] = useState(false);
+
     const currentSession = sessions.find(s => s.active === true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingFee, setDeletingFee] = useState<FeeStructure | null>(null);
@@ -46,14 +50,14 @@ const AccountsFees: React.FC = () => {
 
     // Filter fee structures by current session
     // Filter fee structures by current session
-const currentSessionFees = useMemo(() => {
-    // If no active session, show empty array (nothing for current session)
-    if (!currentSession) return [];
-    // Only show fee structures that belong to the current session
-    return (feeStructuresList || []).filter(fee => 
-        fee.academic_session_id && String(fee.academic_session_id) === String(currentSession.id)
-    );
-}, [feeStructuresList, currentSession]);
+    const currentSessionFees = useMemo(() => {
+        // If no active session, show empty array (nothing for current session)
+        if (!currentSession) return [];
+        // Only show fee structures that belong to the current session
+        return (feeStructuresList || []).filter(fee =>
+            fee.academic_session_id && String(fee.academic_session_id) === String(currentSession.id)
+        );
+    }, [feeStructuresList, currentSession]);
     // const currentSessionFees = useMemo(() => {
     //     if (!currentSession) return feeStructuresList || [];
     //     return (feeStructuresList || []).filter(fee => String(fee.academic_session_id) === String(currentSession.id));
@@ -119,18 +123,89 @@ const currentSessionFees = useMemo(() => {
     }, []);
 
     const handleAddFee = async () => {
-        if (!feeForm.programId || (!feeForm.fullLevelAmount && !feeForm.perCourseAmount)) {
-            setToast('Please fill all required fields');
+    if (!feeForm.programId || (!feeForm.fullLevelAmount && !feeForm.perCourseAmount)) {
+        setToast('Please fill all required fields');
+        return;
+    }
+
+    if (!currentSession) {
+        setToast('No active academic session found');
+        return;
+    }
+
+    setSubmitting(true);
+    try {
+        // Handle multiple programs selection (from checkboxes)
+        if (feeForm.programId === 'MULTIPLE') {
+            const selectedProgramsList = programs.filter(p => selectedProgramIds.has(p.id));
+            const selectedLevelsList = Array.from(selectedLevels);
+            
+            for (const program of selectedProgramsList) {
+                for (const level of selectedLevelsList) {
+                    await apiRequest('/fee-structures', 'POST', {
+                        programId: program.id,
+                        programName: program.name,
+                        level: level,
+                        fullLevelAmount: feeForm.fullLevelAmount,
+                        perCourseAmount: feeForm.perCourseAmount,
+                        academicSessionId: currentSession.id
+                    });
+                }
+            }
+            setToast(`Fee structures added for ${selectedProgramsList.length} program(s) and ${selectedLevelsList.length} level(s)`);
+            await fetchFeeStructuresGlobal();
+            setFeeModal(false);
+            setFeeForm({ programId: '', programName: '', level: 1, fullLevelAmount: 0, perCourseAmount: 0 });
+            setSelectedProgramIds(new Set());
+            setSelectedLevels(new Set());
+            setSubmitting(false);
             return;
         }
-
-        if (!currentSession) {
-            setToast('No active academic session found');
-            return;
+        
+        // Handle "All Programs"
+        if (feeForm.programId === 'ALL') {
+            for (const program of programs) {
+                if (feeForm.level === 0) {
+                    for (let level = 1; level <= 4; level++) {
+                        await apiRequest('/fee-structures', 'POST', {
+                            programId: program.id,
+                            programName: program.name,
+                            level: level,
+                            fullLevelAmount: feeForm.fullLevelAmount,
+                            perCourseAmount: feeForm.perCourseAmount,
+                            academicSessionId: currentSession.id
+                        });
+                    }
+                } else {
+                    await apiRequest('/fee-structures', 'POST', {
+                        programId: program.id,
+                        programName: program.name,
+                        level: feeForm.level,
+                        fullLevelAmount: feeForm.fullLevelAmount,
+                        perCourseAmount: feeForm.perCourseAmount,
+                        academicSessionId: currentSession.id
+                    });
+                }
+            }
+            setToast(`Fee structures added for all programs${feeForm.level === 0 ? ' and all levels' : ` at Level ${feeForm.level}`}`);
+        } 
+        // Handle single program with "All Levels"
+        else if (feeForm.level === 0) {
+            const program = programs.find(p => p.id === feeForm.programId);
+            for (let level = 1; level <= 4; level++) {
+                await apiRequest('/fee-structures', 'POST', {
+                    programId: feeForm.programId,
+                    programName: program?.name || '',
+                    level: level,
+                    fullLevelAmount: feeForm.fullLevelAmount,
+                    perCourseAmount: feeForm.perCourseAmount,
+                    academicSessionId: currentSession.id
+                });
+            }
+            setToast(`Fee structures added for ${program?.name} - All Levels`);
         }
-
-        setSubmitting(true);
-        try {
+        // Handle single program, single level
+        else {
             await apiRequest('/fee-structures', 'POST', {
                 programId: feeForm.programId,
                 programName: feeForm.programName,
@@ -139,17 +214,131 @@ const currentSessionFees = useMemo(() => {
                 perCourseAmount: feeForm.perCourseAmount,
                 academicSessionId: currentSession.id
             });
-            await fetchFeeStructuresGlobal();
             setToast('Fee structure added for current session');
-            setFeeModal(false);
-            setFeeForm({ programId: '', programName: '', level: 1, fullLevelAmount: 0, perCourseAmount: 0 });
-        } catch (error: any) {
-            console.error('Failed to add fee structure:', error);
-            setToast(error.message || 'Failed to add fee structure');
-        } finally {
-            setSubmitting(false);
         }
-    };
+
+        await fetchFeeStructuresGlobal();
+        setFeeModal(false);
+        setFeeForm({ programId: '', programName: '', level: 1, fullLevelAmount: 0, perCourseAmount: 0 });
+    } catch (error: any) {
+        console.error('Failed to add fee structure:', error);
+        setToast(error.message || 'Failed to add fee structure');
+    } finally {
+        setSubmitting(false);
+    }
+};
+
+    // const handleAddFee = async () => {
+    //     if (!feeForm.programId || (!feeForm.fullLevelAmount && !feeForm.perCourseAmount)) {
+    //         setToast('Please fill all required fields');
+    //         return;
+    //     }
+
+    //     if (!currentSession) {
+    //         setToast('No active academic session found');
+    //         return;
+    //     }
+
+    //     setSubmitting(true);
+    //     try {
+    //         // Handle "All Programs"
+    //         if (feeForm.programId === 'ALL') {
+    //             for (const program of programs) {
+    //                 if (feeForm.level === 0) {
+    //                     for (let level = 1; level <= 4; level++) {
+    //                         await apiRequest('/fee-structures', 'POST', {
+    //                             programId: program.id,
+    //                             programName: program.name,
+    //                             level: level,
+    //                             fullLevelAmount: feeForm.fullLevelAmount,
+    //                             perCourseAmount: feeForm.perCourseAmount,
+    //                             academicSessionId: currentSession.id
+    //                         });
+    //                     }
+    //                 } else {
+    //                     await apiRequest('/fee-structures', 'POST', {
+    //                         programId: program.id,
+    //                         programName: program.name,
+    //                         level: feeForm.level,
+    //                         fullLevelAmount: feeForm.fullLevelAmount,
+    //                         perCourseAmount: feeForm.perCourseAmount,
+    //                         academicSessionId: currentSession.id
+    //                     });
+    //                 }
+    //             }
+    //             setToast(`Fee structures added for all programs${feeForm.level === 0 ? ' and all levels' : ` at Level ${feeForm.level}`}`);
+    //         }
+    //         // Handle single program with "All Levels"
+    //         else if (feeForm.level === 0) {
+    //             const program = programs.find(p => p.id === feeForm.programId);
+    //             for (let level = 1; level <= 4; level++) {
+    //                 await apiRequest('/fee-structures', 'POST', {
+    //                     programId: feeForm.programId,
+    //                     programName: program?.name || '',
+    //                     level: level,
+    //                     fullLevelAmount: feeForm.fullLevelAmount,
+    //                     perCourseAmount: feeForm.perCourseAmount,
+    //                     academicSessionId: currentSession.id
+    //                 });
+    //             }
+    //             setToast(`Fee structures added for ${program?.name} - All Levels`);
+    //         }
+    //         // Handle single program, single level
+    //         else {
+    //             await apiRequest('/fee-structures', 'POST', {
+    //                 programId: feeForm.programId,
+    //                 programName: feeForm.programName,
+    //                 level: feeForm.level,
+    //                 fullLevelAmount: feeForm.fullLevelAmount,
+    //                 perCourseAmount: feeForm.perCourseAmount,
+    //                 academicSessionId: currentSession.id
+    //             });
+    //             setToast('Fee structure added for current session');
+    //         }
+
+    //         await fetchFeeStructuresGlobal();
+    //         setFeeModal(false);
+    //         setFeeForm({ programId: '', programName: '', level: 1, fullLevelAmount: 0, perCourseAmount: 0 });
+    //     } catch (error: any) {
+    //         console.error('Failed to add fee structure:', error);
+    //         setToast(error.message || 'Failed to add fee structure');
+    //     } finally {
+    //         setSubmitting(false);
+    //     }
+    // };
+
+    // const handleAddFee = async () => {
+    //     if (!feeForm.programId || (!feeForm.fullLevelAmount && !feeForm.perCourseAmount)) {
+    //         setToast('Please fill all required fields');
+    //         return;
+    //     }
+
+    //     if (!currentSession) {
+    //         setToast('No active academic session found');
+    //         return;
+    //     }
+
+    //     setSubmitting(true);
+    //     try {
+    //         await apiRequest('/fee-structures', 'POST', {
+    //             programId: feeForm.programId,
+    //             programName: feeForm.programName,
+    //             level: feeForm.level,
+    //             fullLevelAmount: feeForm.fullLevelAmount,
+    //             perCourseAmount: feeForm.perCourseAmount,
+    //             academicSessionId: currentSession.id
+    //         });
+    //         await fetchFeeStructuresGlobal();
+    //         setToast('Fee structure added for current session');
+    //         setFeeModal(false);
+    //         setFeeForm({ programId: '', programName: '', level: 1, fullLevelAmount: 0, perCourseAmount: 0 });
+    //     } catch (error: any) {
+    //         console.error('Failed to add fee structure:', error);
+    //         setToast(error.message || 'Failed to add fee structure');
+    //     } finally {
+    //         setSubmitting(false);
+    //     }
+    // };
 
     const handleUpdateFee = async () => {
         if (!editingFee) return;
@@ -191,26 +380,26 @@ const currentSessionFees = useMemo(() => {
     // };
 
     const openDeleteModal = (fee: FeeStructure) => {
-    setDeletingFee(fee);
-    setShowDeleteModal(true);
-};
+        setDeletingFee(fee);
+        setShowDeleteModal(true);
+    };
 
-const confirmDeleteFee = async () => {
-    if (!deletingFee) return;
-    setDeleting(true);
-    try {
-        await apiRequest(`/fee-structures/${deletingFee.id}`, 'DELETE');
-        await fetchFeeStructuresGlobal();
-        setToast('Fee structure deleted');
-        setShowDeleteModal(false);
-        setDeletingFee(null);
-    } catch (error) {
-        console.error('Failed to delete fee structure:', error);
-        setToast('Failed to delete fee structure');
-    } finally {
-        setDeleting(false);
-    }
-};
+    const confirmDeleteFee = async () => {
+        if (!deletingFee) return;
+        setDeleting(true);
+        try {
+            await apiRequest(`/fee-structures/${deletingFee.id}`, 'DELETE');
+            await fetchFeeStructuresGlobal();
+            setToast('Fee structure deleted');
+            setShowDeleteModal(false);
+            setDeletingFee(null);
+        } catch (error) {
+            console.error('Failed to delete fee structure:', error);
+            setToast('Failed to delete fee structure');
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     const openFeeModal = (fee?: FeeStructure) => {
         if (fee) {
@@ -245,25 +434,25 @@ const confirmDeleteFee = async () => {
                 title="Fee Structure"
                 subtitle={activeTab === 'current' ? `Current Session: ${currentSession?.year || 'No active session'}` : "Previous Sessions History"}
                 action={
-    activeTab === 'current' && (
-        <Button 
-            onClick={() => openFeeModal()} 
-            disabled={!currentSession}
-            title={!currentSession ? "Please activate an academic session first" : "Add fee structure for current session"}
-        >
-            <DollarSign className="w-4 h-4 inline mr-1" />
-            Add Fee Structure
-        </Button>
-    )
-}
-                // action={
-                //     activeTab === 'current' && (
-                //         <Button onClick={() => openFeeModal()}>
-                //             <DollarSign className="w-4 h-4 inline mr-1" />
-                //             Add Fee Structure
-                //         </Button>
-                //     )
-                // }
+                    activeTab === 'current' && (
+                        <Button
+                            onClick={() => openFeeModal()}
+                            disabled={!currentSession}
+                            title={!currentSession ? "Please activate an academic session first" : "Add fee structure for current session"}
+                        >
+                            <DollarSign className="w-4 h-4 inline mr-1" />
+                            Add Fee Structure
+                        </Button>
+                    )
+                }
+            // action={
+            //     activeTab === 'current' && (
+            //         <Button onClick={() => openFeeModal()}>
+            //             <DollarSign className="w-4 h-4 inline mr-1" />
+            //             Add Fee Structure
+            //         </Button>
+            //     )
+            // }
             />
 
             {/* Tabs */}
@@ -307,17 +496,17 @@ const confirmDeleteFee = async () => {
                             No fee structures set for current session ({currentSession?.year})
                         </div>
                     ) : ( */}
-                    {activeTab === 'current' && (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        {!currentSession ? (
-            <div className="text-center py-12 text-amber-600">
-                No active academic session. Please activate a session first.
-            </div>
-        ) : currentSessionFees.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-                No fee structures set for current session ({currentSession?.year})
-            </div>
-        ) : (
+            {activeTab === 'current' && (
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                    {!currentSession ? (
+                        <div className="text-center py-12 text-amber-600">
+                            No active academic session. Please activate a session first.
+                        </div>
+                    ) : currentSessionFees.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500">
+                            No fee structures set for current session ({currentSession?.year})
+                        </div>
+                    ) : (
                         <Table headers={['Program', 'Level', 'Full Level Fee', 'Per Course Fee', 'Actions']} rowCount={currentSessionFees.length}>
                             {currentSessionFees.map((fee: FeeStructure) => (
                                 <tr key={fee.id} className="hover:bg-slate-50">
@@ -336,12 +525,12 @@ const confirmDeleteFee = async () => {
                                                     >
                                                         Edit
                                                     </button>
-                                                    <button 
-    onClick={() => openDeleteModal(fee)} 
-    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
->
-    Delete
-</button>
+                                                    <button
+                                                        onClick={() => openDeleteModal(fee)}
+                                                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
+                                                    >
+                                                        Delete
+                                                    </button>
                                                     {/* <button
                                                         onClick={() => handleDeleteFee(fee.id)}
                                                         className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
@@ -487,7 +676,71 @@ const confirmDeleteFee = async () => {
 
             <Modal open={feeModal} onClose={() => !submitting && setFeeModal(false)} title={editingFee ? 'Edit Fee Structure' : 'Add Fee Structure'}>
                 <form onSubmit={(e) => { e.preventDefault(); editingFee ? handleUpdateFee() : handleAddFee(); }} className="space-y-4">
-                    <Field label="Program" required>
+                    <div className="flex gap-2 items-end">
+                        <Field label="Programs (Select one or multiple)" required>
+    <div className="border border-slate-200 rounded-lg p-2 max-h-32 overflow-y-auto">
+        <label className="flex items-center gap-2 p-1 hover:bg-slate-50 border-b pb-1 mb-1">
+            <input
+                type="checkbox"
+                checked={selectedProgramIds.size === programs.length && programs.length > 0}
+                onChange={() => {
+                    if (selectedProgramIds.size === programs.length) {
+                        setSelectedProgramIds(new Set());
+                        setFeeForm({ ...feeForm, programId: '', programName: '' });
+                    } else {
+                        const allIds = new Set(programs.map(p => p.id));
+                        setSelectedProgramIds(allIds);
+                        setFeeForm({ ...feeForm, programId: 'MULTIPLE', programName: `All ${programs.length} programs selected` });
+                    }
+                }}
+            />
+            <span className="text-sm font-medium">Select All Programs</span>
+        </label>
+        {programs.map(program => (
+            <label key={program.id} className="flex items-center gap-2 p-1 hover:bg-slate-50">
+                <input
+                    type="checkbox"
+                    checked={selectedProgramIds.has(program.id)}
+                    onChange={(e) => {
+                        const newSet = new Set(selectedProgramIds);
+                        if (e.target.checked) {
+                            newSet.add(program.id);
+                            setFeeForm({ ...feeForm, programId: 'MULTIPLE', programName: `${newSet.size} program(s) selected` });
+                        } else {
+                            newSet.delete(program.id);
+                            if (newSet.size === 0) {
+                                setFeeForm({ ...feeForm, programId: '', programName: '' });
+                            } else {
+                                setFeeForm({ ...feeForm, programId: 'MULTIPLE', programName: `${newSet.size} program(s) selected` });
+                            }
+                        }
+                        setSelectedProgramIds(newSet);
+                    }}
+                />
+                <span className="text-sm">{program.name}</span>
+            </label>
+        ))}
+    </div>
+</Field>
+                        {/* <Button type="button" variant="secondary" onClick={() => setShowAdvancedModal(true)}>
+                            Select Multiple
+                        </Button> */}
+                    </div>
+                    {/* <Field label="Program" required>
+                        <Select
+                            value={feeForm.programId}
+                            onChange={e => {
+                                const program = programs.find(p => p.id === e.target.value);
+                                setFeeForm({ ...feeForm, programId: e.target.value, programName: program?.name || '' });
+                            }}
+                            disabled={!!editingFee || submitting}
+                        >
+                            <option value="">Select program</option>
+                            <option value="ALL">All Programs</option>
+                            {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </Select>
+                    </Field> */}
+                    {/* <Field label="Program" required>
                         <Select
                             value={feeForm.programId}
                             onChange={e => {
@@ -499,8 +752,71 @@ const confirmDeleteFee = async () => {
                             <option value="">Select program</option>
                             {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </Select>
-                    </Field>
-                    <Field label="Level" required>
+                    </Field> */}
+                    <Field label="Levels (Select one or multiple)" required>
+    <div className="border border-slate-200 rounded-lg p-2">
+        <label className="flex items-center gap-2 p-1 hover:bg-slate-50 border-b pb-1 mb-1">
+            <input
+                type="checkbox"
+                checked={selectedLevels.size === 4}
+                onChange={() => {
+                    if (selectedLevels.size === 4) {
+                        setSelectedLevels(new Set());
+                        setFeeForm({ ...feeForm, level: 1 });
+                    } else {
+                        setSelectedLevels(new Set([1, 2, 3, 4]));
+                        setFeeForm({ ...feeForm, level: 0 });
+                    }
+                }}
+            />
+            <span className="text-sm font-medium">Select All Levels</span>
+        </label>
+        {[1, 2, 3, 4].map(level => (
+            <label key={level} className="flex items-center gap-2 p-1 hover:bg-slate-50">
+                <input
+                    type="checkbox"
+                    checked={selectedLevels.has(level)}
+                    onChange={(e) => {
+                        const newSet = new Set(selectedLevels);
+                        if (e.target.checked) {
+                            newSet.add(level);
+                        } else {
+                            newSet.delete(level);
+                        }
+                        setSelectedLevels(newSet);
+                        if (newSet.size === 0) {
+                            setFeeForm({ ...feeForm, level: 1 });
+                        } else {
+                            setFeeForm({ ...feeForm, level: 0 });
+                        }
+                    }}
+                />
+                <span className="text-sm">Level {level}</span>
+            </label>
+        ))}
+    </div>
+</Field>
+                    {/* <Field label="Level" required>
+                        <Select
+                            value={feeForm.level === 0 ? 'ALL' : feeForm.level}
+                            onChange={e => {
+                                const value = e.target.value;
+                                if (value === 'ALL') {
+                                    setFeeForm({ ...feeForm, level: 0 });
+                                } else {
+                                    setFeeForm({ ...feeForm, level: parseInt(value) });
+                                }
+                            }}
+                            disabled={!!editingFee || submitting}
+                        >
+                            <option value="ALL">All Levels</option>
+                            <option value={1}>Level 1</option>
+                            <option value={2}>Level 2</option>
+                            <option value={3}>Level 3</option>
+                            <option value={4}>Level 4</option>
+                        </Select>
+                    </Field> */}
+                    {/* <Field label="Level" required>
                         <Select
                             value={feeForm.level}
                             onChange={e => setFeeForm({ ...feeForm, level: parseInt(e.target.value) })}
@@ -511,7 +827,7 @@ const confirmDeleteFee = async () => {
                             <option value={3}>Level 3</option>
                             <option value={4}>Level 4</option>
                         </Select>
-                    </Field>
+                    </Field> */}
 
                     <Field label="Full Level Fee (K)" required>
                         <Input
@@ -533,26 +849,7 @@ const confirmDeleteFee = async () => {
                             placeholder="e.g., 150000"
                         />
                     </Field>
-                    {/* <Field label="Full Level Fee (K)" required>
-                        <Input
-                            type="number"
-                            min="0"
-                            value={feeForm.fullLevelAmount}
-                            onChange={e => setFeeForm({ ...feeForm, fullLevelAmount: parseInt(e.target.value) || 0 })}
-                            disabled={submitting}
-                            placeholder="e.g., 500000"
-                        />
-                    </Field>
-                    <Field label="Per Course Fee (K)" required>
-                        <Input
-                            type="number"
-                            min="0"
-                            value={feeForm.perCourseAmount}
-                            onChange={e => setFeeForm({ ...feeForm, perCourseAmount: parseInt(e.target.value) || 0 })}
-                            disabled={submitting}
-                            placeholder="e.g., 150000"
-                        />
-                    </Field> */}
+
                     {!currentSession && activeTab === 'current' && (
                         <p className="text-sm text-amber-600">No active session. Please activate a session first.</p>
                     )}
@@ -565,27 +862,6 @@ const confirmDeleteFee = async () => {
                     </div>
                 </form>
             </Modal>
-            <Modal open={showDeleteModal} onClose={() => !deleting && setShowDeleteModal(false)} title="Confirm Delete" size="md">
-    <div className="space-y-4">
-        <p className="text-sm text-slate-600">
-            Are you sure you want to delete the fee structure for <strong>{deletingFee?.program_name}</strong>?
-        </p>
-        <div className="bg-red-50 p-4 rounded-lg">
-            <p className="text-sm text-red-800">
-                This action cannot be undone.
-            </p>
-        </div>
-        <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
-                Cancel
-            </Button>
-            <Button variant="danger" onClick={confirmDeleteFee} disabled={deleting}>
-                {deleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
-                Confirm Delete
-            </Button>
-        </div>
-    </div>
-</Modal>
         </div>
     );
 };
