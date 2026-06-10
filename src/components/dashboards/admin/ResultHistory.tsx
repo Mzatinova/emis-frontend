@@ -13,6 +13,7 @@ const ResultHistory: React.FC<ResultHistoryProps> = ({ toast, setToast }) => {
     const [selectedSessionId, setSelectedSessionId] = useState<string>('');
     const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
     const [expandedLevel, setExpandedLevel] = useState<string | null>(null);
+    const currentSession = sessions.find(s => s.active === true);
     
     // Search states
     const [sessionSearch, setSessionSearch] = useState('');
@@ -31,10 +32,21 @@ const ResultHistory: React.FC<ResultHistoryProps> = ({ toast, setToast }) => {
     const publishedResults = results.filter(r => r.status === 'approved');
 
     // Get sessions that have results
-    const sessionsWithResults = useMemo(() => {
-        const sessionIds = new Set(publishedResults.map(r => String(r.academic_session_id)).filter(Boolean));
-        return sessions.filter(s => sessionIds.has(String(s.id)));
-    }, [sessions, publishedResults]);
+    // Get sessions that have results (excluding current active session)
+
+
+const sessionsWithResults = useMemo(() => {
+    const sessionIds = new Set(publishedResults.map(r => String(r.academic_session_id)).filter(Boolean));
+    return sessions.filter(s => {
+        // Exclude current active session from history
+        if (currentSession && String(s.id) === String(currentSession.id)) return false;
+        return sessionIds.has(String(s.id));
+    });
+}, [sessions, publishedResults, currentSession]);
+    // const sessionsWithResults = useMemo(() => {
+    //     const sessionIds = new Set(publishedResults.map(r => String(r.academic_session_id)).filter(Boolean));
+    //     return sessions.filter(s => sessionIds.has(String(s.id)));
+    // }, [sessions, publishedResults]);
 
     // Filter sessions by search
     const filteredSessions = useMemo(() => {
@@ -365,7 +377,7 @@ const ResultHistory: React.FC<ResultHistoryProps> = ({ toast, setToast }) => {
                                                             <Badge status={stats.passRate >= 70 ? 'success' : stats.passRate >= 50 ? 'warning' : 'error'}>
                                                                 {Math.round(stats.passRate)}% Pass Rate
                                                             </Badge>
-                                                            <span className="text-xs text-slate-400">({total} students)</span>
+                                                            <span className="text-xs text-slate-400">({total} student(s))</span>
                                                         </div>
                                                         <span className="text-slate-400 text-sm">{isLevelExpanded ? '▲' : '▼'}</span>
                                                     </button>
