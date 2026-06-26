@@ -15,6 +15,7 @@ import StudentRegistration from './StudentRegistration';
 import StudentResults from './StudentResults';
 import StudentHistory from './StudentHistory';
 import StudentInvoices from './StudentInvoices';
+import MyCourses from './MyCourses';
 
 const StudentDash: React.FC<{ active: string }> = ({ active }) => {
   const { currentUser, results, sessions, courses } = useEMIS();
@@ -286,6 +287,10 @@ const StudentDash: React.FC<{ active: string }> = ({ active }) => {
   if (active === 'registration') {
     return <StudentRegistration toast={toast} setToast={setToast} />;
   }
+   if (active === 'mycourses') {  // ← ADD THIS
+    return <MyCourses />;
+  }
+
 
   if (active === 'invoices') {
     return <StudentInvoices />;

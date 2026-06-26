@@ -50,6 +50,7 @@ const menus: Record<Role, { key: string; label: string; icon: any }[]> = {
   student: [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'registration', label: 'Registration', icon: CreditCard },
+    { key: 'mycourses', label: 'My Courses', icon: BookOpen },
     { key: 'invoices', label: 'My Invoices', icon: Receipt },
     { key: 'results', label: 'My Results', icon: FileText },
     { key: 'history', label: 'Result History', icon: History },
