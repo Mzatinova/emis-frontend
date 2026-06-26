@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useEMIS } from '@/contexts/EMISContext';
 import { PageHeader, Button, Badge, Modal, Input, Toast } from '@/components/shared/UI';
 import { CreditCard, Upload, CheckCircle, XCircle, FileText, Calendar, Loader2, Clock } from 'lucide-react';
+import PaymentModal from './PaymentModal';
 
 interface StudentRegistrationProps {
     toast: string;
@@ -15,6 +16,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
     console.log('currentRegistrationPeriod:', currentRegistrationPeriod);
     console.log('feeStructuresList:', feeStructuresList);
     const [loading, setLoading] = useState(false);
+    const [paymentModal, setPaymentModal] = useState(false);
     // const [eligibleLevels, setEligibleLevels] = useState<any[]>([]);
     // const [canRegister, setCanRegister] = useState(false);
     // const [registrationReason, setRegistrationReason] = useState('');
@@ -87,35 +89,35 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
     // Get fee for selected level from fee_structures table
 
     const getFeeAmount = () => {
-    if (!selectedLevel || !currentStudent?.program) return 0;
+        if (!selectedLevel || !currentStudent?.program) return 0;
 
-    // Get current active session
-    const currentSession = sessions.find(s => s.active === true);
-    if (!currentSession) return 0;
+        // Get current active session
+        const currentSession = sessions.find(s => s.active === true);
+        if (!currentSession) return 0;
 
-    console.log('Looking for fee with:', {
-        program_id: currentStudent.program,
-        level: selectedLevel,
-        session_id: currentSession.id
-    });
-    console.log('Available fees:', feeStructuresList);
+        console.log('Looking for fee with:', {
+            program_id: currentStudent.program,
+            level: selectedLevel,
+            session_id: currentSession.id
+        });
+        console.log('Available fees:', feeStructuresList);
 
-    // Find fee structure for current session
-    const fee = feeStructuresList.find(f =>
-        f.program_name === currentStudent.program &&
-        Number(f.level) === Number(selectedLevel) &&
-        String(f.academic_session_id) === String(currentSession.id)
-    );
+        // Find fee structure for current session
+        const fee = feeStructuresList.find(f =>
+            f.program_name === currentStudent.program &&
+            Number(f.level) === Number(selectedLevel) &&
+            String(f.academic_session_id) === String(currentSession.id)
+        );
 
-    console.log('Found fee:', fee);
+        console.log('Found fee:', fee);
 
-    if (!fee) return 0;
+        if (!fee) return 0;
 
-    if (selectedType === 'repeater' && selectedCourses.length > 0) {
-        return selectedCourses.length * Number(fee.per_course_amount);
-    }
-    return Number(fee.full_level_amount);
-};
+        if (selectedType === 'repeater' && selectedCourses.length > 0) {
+            return selectedCourses.length * Number(fee.per_course_amount);
+        }
+        return Number(fee.full_level_amount);
+    };
 
     // const getFeeAmount = () => {
     //     if (!selectedLevel || !currentStudent?.program) return 0;
@@ -144,7 +146,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
     //     }
     //     return Number(fee.full_level_amount);
     // };
- 
+
 
     const handleCourseToggle = (course: string) => {
         if (selectedCourses.includes(course)) {
@@ -303,47 +305,47 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
 
             {/* Registration Period Status */}
             {/* Registration Period Status */}
-<div className="bg-white border border-slate-200 rounded-xl p-4 mb-6">
-    <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-slate-500" />
-            <div>
-                <p className="text-sm text-slate-600">Registration Period</p>
-                {currentRegistrationPeriod && currentRegistrationPeriod.registration_open ? (
-                    <>
-                        <p className="font-medium text-slate-900">
-                            {new Date(currentRegistrationPeriod.registration_start_date).toLocaleDateString()} - {new Date(currentRegistrationPeriod.registration_end_date).toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-slate-500">Registration is <span className="text-emerald-600 font-medium">Open</span></p>
-                    </>
-                ) : currentRegistrationPeriod && !currentRegistrationPeriod.registration_open ? (
-                    <p className="text-amber-600">Registration is Currently Closed</p>
-                ) : (
-                    <p className="text-amber-600">No Active Registration Period</p>
-                )}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-slate-500" />
+                        <div>
+                            <p className="text-sm text-slate-600">Registration Period</p>
+                            {currentRegistrationPeriod && currentRegistrationPeriod.registration_open ? (
+                                <>
+                                    <p className="font-medium text-slate-900">
+                                        {new Date(currentRegistrationPeriod.registration_start_date).toLocaleDateString()} - {new Date(currentRegistrationPeriod.registration_end_date).toLocaleDateString()}
+                                    </p>
+                                    <p className="text-xs text-slate-500">Registration is <span className="text-emerald-600 font-medium">Open</span></p>
+                                </>
+                            ) : currentRegistrationPeriod && !currentRegistrationPeriod.registration_open ? (
+                                <p className="text-amber-600">Registration is Currently Closed</p>
+                            ) : (
+                                <p className="text-amber-600">No Active Registration Period</p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm text-slate-600">Your Status</p>
+                        {myInvoices.some(inv => inv.status === 'approved' && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+                            <div className="flex items-center gap-2 text-emerald-600">
+                                <CheckCircle className="w-4 h-4" />
+                                <span className="font-medium">Approved</span>
+                            </div>
+                        ) : myInvoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+                            <div className="flex items-center gap-2 text-blue-600">
+                                <Clock className="w-4 h-4" />
+                                <span className="font-medium">Pending Approval</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 text-amber-600">
+                                <CreditCard className="w-4 h-4" />
+                                <span className="font-medium">Not Registered</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
-        <div className="text-right">
-            <p className="text-sm text-slate-600">Your Status</p>
-            {myInvoices.some(inv => inv.status === 'approved' && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
-                <div className="flex items-center gap-2 text-emerald-600">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium">Approved</span>
-                </div>
-            ) : myInvoices.some(inv => (inv.status === 'pending' || inv.status === 'paid') && String(inv.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
-                <div className="flex items-center gap-2 text-blue-600">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-medium">Pending Approval</span>
-                </div>
-            ) : (
-                <div className="flex items-center gap-2 text-amber-600">
-                    <CreditCard className="w-4 h-4" />
-                    <span className="font-medium">Not Registered</span>
-                </div>
-            )}
-        </div>
-    </div>
-</div>
             {/* <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-3">
@@ -388,7 +390,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Levels Card */}
                 {/* <div className="bg-white border border-slate-200 rounded-xl"> */}
-                        {/* {myRegistrations.some(reg => reg.registration_status === 'pending') ? (
+                {/* {myRegistrations.some(reg => reg.registration_status === 'pending') ? (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
         <div className="flex flex-col items-center gap-2">
             <Clock className="w-8 h-8 text-amber-600" />
@@ -414,23 +416,23 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                         </div>
                     </div>
                 ) : ( */}
-        {myRegistrations.some(reg => reg.registration_status === 'pending' && String(reg.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
-        <div className="flex flex-col items-center gap-2">
-            <Clock className="w-8 h-8 text-amber-600" />
-            <h3 className="font-semibold text-amber-800">Registration Pending</h3>
-            <p className="text-sm text-amber-700">You have a pending registration. Please wait for approval.</p>
-        </div>
-    </div>
-) : myRegistrations.some(reg => reg.registration_status === 'approved' && String(reg.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
-    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
-        <div className="flex flex-col items-center gap-2">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
-            <h3 className="font-semibold text-emerald-800">Registration Approved</h3>
-            <p className="text-sm text-emerald-700">Your registration has been approved for this session.</p>
-        </div>
-    </div>
-) : (
+                {myRegistrations.some(reg => reg.registration_status === 'pending' && String(reg.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <Clock className="w-8 h-8 text-amber-600" />
+                            <h3 className="font-semibold text-amber-800">Registration Pending</h3>
+                            <p className="text-sm text-amber-700">You have a pending registration. Please wait for approval.</p>
+                        </div>
+                    </div>
+                ) : myRegistrations.some(reg => reg.registration_status === 'approved' && String(reg.academic_session_id) === String(currentRegistrationPeriod?.id)) ? (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <CheckCircle className="w-8 h-8 text-emerald-600" />
+                            <h3 className="font-semibold text-emerald-800">Registration Approved</h3>
+                            <p className="text-sm text-emerald-700">Your registration has been approved for this session.</p>
+                        </div>
+                    </div>
+                ) : (
 
                     <div className="bg-white border border-slate-200 rounded-xl">
                         <div className="border-b border-slate-200 px-6 py-4">
@@ -550,16 +552,28 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                                                         <p className="text-xs text-red-600 mt-1">Reason: {invoice.rejection_reason}</p>
                                                     )}
                                                     {(invoice.status === 'pending' || invoice.status === 'rejected') && (
-                                                        <Button
-                                                            className="mt-2 px-3 py-1.5 text-sm w-full"
-                                                            onClick={() => {
-                                                                setSelectedInvoice(invoice);
-                                                                setReceiptModal(true);
-                                                            }}
-                                                        >
-                                                            <Upload className="w-3 h-3 mr-1" />
-                                                            {invoice.status === 'rejected' ? 'Re-upload Receipt' : 'Upload Receipt'}
-                                                        </Button>
+                                                        <>
+                                                            {/* <Button
+                                                                className="mt-2 px-3 py-1.5 text-sm w-full"
+                                                                onClick={() => {
+                                                                    setSelectedInvoice(invoice);
+                                                                    setReceiptModal(true);
+                                                                }}
+                                                            >
+                                                                <Upload className="w-3 h-3 mr-1" />
+                                                                {invoice.status === 'rejected' ? 'Re-upload Receipt' : 'Upload Receipt'}
+                                                            </Button> */}
+
+                                                            <Button
+                                                                className="px-3 py-1.5 text-sm flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                                                onClick={() => {
+                                                                    setSelectedInvoice(invoice);
+                                                                    setPaymentModal(true);
+                                                                }}
+                                                            >
+                                                                Pay Now
+                                                            </Button>
+                                                        </>
                                                     )}
                                                 </div>
                                             )}
@@ -644,6 +658,16 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ toast, setToa
                     </div>
                 </div>
             </Modal>
+            <PaymentModal
+                open={paymentModal}
+                onClose={() => setPaymentModal(false)}
+                invoice={selectedInvoice}
+                onSuccess={() => {
+                    setPaymentModal(false);
+                    setToast('Payment initiated successfully!');
+                    fetchRegistrationData(currentUser!.id);
+                }}
+            />
         </div>
     );
 };

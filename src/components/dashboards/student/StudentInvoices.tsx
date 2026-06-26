@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useEMIS } from '@/contexts/EMISContext';
 import { PageHeader, Badge, Button, Modal, Toast } from '@/components/shared/UI';
 import { Upload } from 'lucide-react';
+import PaymentModal from './PaymentModal';
 
 const StudentInvoices: React.FC = () => {
     const { currentUser, myInvoices, apiRequest, fetchRegistrationData } = useEMIS();
@@ -11,6 +12,7 @@ const StudentInvoices: React.FC = () => {
     const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
     const [receiptImage, setReceiptImage] = useState<string>('');
     const [uploading, setUploading] = useState(false);
+    const [paymentModal, setPaymentModal] = useState(false);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -93,15 +95,13 @@ const StudentInvoices: React.FC = () => {
                                     <td className="px-4 py-3">
                                         {(inv.status === 'pending' || inv.status === 'rejected') && (
                                             <Button
-                                                variant="secondary"
-                                                className="px-3 py-1.5 text-sm"
+                                                className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white"
                                                 onClick={() => {
                                                     setSelectedInvoice(inv);
-                                                    setReceiptModal(true);
+                                                    setPaymentModal(true);
                                                 }}
                                             >
-                                                <Upload className="w-3 h-3 inline mr-1" />
-                                                Upload Receipt
+                                                Pay Now
                                             </Button>
                                         )}
                                         {inv.status === 'approved' && (
@@ -158,6 +158,16 @@ const StudentInvoices: React.FC = () => {
                     </div>
                 </div>
             </Modal>
+            <PaymentModal
+                open={paymentModal}
+                onClose={() => setPaymentModal(false)}
+                invoice={selectedInvoice}
+                onSuccess={() => {
+                    setPaymentModal(false);
+                    setToast('Payment initiated successfully!');
+                    fetchRegistrationData(currentUser!.id);
+                }}
+            />
         </div>
     );
 };
