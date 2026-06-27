@@ -6,6 +6,7 @@ import ResultsManagement from './ResultsManagement';
 import SessionManagement from './SessionManagement';
 import AdminDashboard from './AdminDashboard';
 import ResultHistory from './ResultHistory';
+import AdminReports from './AdminReports';
 
 const AdminDash: React.FC<{ active: string }> = ({ active }) => {
   const [toast, setToast] = useState('');
@@ -36,6 +37,9 @@ const AdminDash: React.FC<{ active: string }> = ({ active }) => {
    if (active === 'history') {
     return <ResultHistory toast={toast} setToast={setToast} />;
   }
+  if (active === 'reports') {
+    return <AdminReports toast={toast} setToast={setToast} />;
+}
 
   return null;
 };

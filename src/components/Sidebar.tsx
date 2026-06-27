@@ -10,7 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  BarChart3,
+  TrendingUp
 } from 'lucide-react';
 
 interface Props {
@@ -34,18 +36,21 @@ const menus: Record<Role, { key: string; label: string; icon: any }[]> = {
     { key: 'sessions', label: 'Academic Sessions', icon: CalendarDays },
     { key: 'results', label: 'Results Management', icon: FileText },
     { key: 'history', label: 'Result History', icon: History },
+    { key: 'reports', label: 'Reports', icon: BarChart3 }, 
   ],
   instructor: [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'myclasses', label: 'My Classes', icon: BookOpen },
     { key: 'mystudents', label: 'My Students', icon: Users },
     { key: 'results', label: 'Results Management', icon: FileText },
+     { key: 'performance', label: 'Performance Report', icon: TrendingUp },
   ],
   accounts: [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'invoices', label: 'Registration Approval', icon: Receipt },
     { key: 'fees', label: 'Fee Structure', icon: DollarSign },
     { key: 'registered', label: 'Registered Students', icon: Users },
+    { key: 'revenue', label: 'Revenue Report', icon: TrendingUp },
   ],
   student: [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },

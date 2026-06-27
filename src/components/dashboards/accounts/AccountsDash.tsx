@@ -6,6 +6,7 @@ import { Receipt, Check, Users, TrendingUp, Eye, Clock } from 'lucide-react';
 import AccountsFees from './AccountsFees';
 import AccountsApproval from './AccountsApproval';
 import AccountsRegistered from './AccountsRegistered';
+import RevenueReport from './RevenueReport';
 
 const AccountsDash: React.FC<{ active: string; setActive?: (tab: string) => void }> = ({ active, setActive }) => {
 
@@ -182,6 +183,10 @@ const AccountsDash: React.FC<{ active: string; setActive?: (tab: string) => void
   if (active === 'registered') {
     return <AccountsRegistered initialFilter="pending" />;
   }
+
+  if (active === 'revenue') {
+    return <RevenueReport toast={toast} setToast={setToast} />;
+}
 
   return null;
 };
