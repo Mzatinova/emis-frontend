@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  Award
 } from 'lucide-react';
 
 interface Props {
@@ -28,16 +29,27 @@ const menus: Record<Role, { key: string; label: string; icon: any }[]> = {
     { key: 'students', label: 'Student Management', icon: GraduationCap },
     { key: 'audit', label: 'Audit Logs', icon: ScrollText },
   ],
+
   administrator: [
-    { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { key: 'students', label: 'Students Management', icon: GraduationCap },
-    { key: 'instructors', label: 'Instructor Management', icon: Users },
-    { key: 'programs', label: 'Program Management', icon: BookOpen },
-    { key: 'sessions', label: 'Academic Sessions', icon: CalendarDays },
-    { key: 'results', label: 'Results Management', icon: FileText },
-    { key: 'history', label: 'Result History', icon: History },
-    { key: 'reports', label: 'Reports', icon: BarChart3 }, 
-  ],
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'students', label: 'Students Management', icon: GraduationCap },
+  { key: 'instructors', label: 'Instructor Management', icon: Users },
+  { key: 'programs', label: 'Program Management', icon: BookOpen },
+  { key: 'sessions', label: 'Academic Sessions', icon: CalendarDays },
+  { key: 'results', label: 'Results & Grading', icon: FileText },
+  { key: 'reports', label: 'Reports', icon: BarChart3 },
+],
+  // administrator: [
+  //   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  //   { key: 'students', label: 'Students Management', icon: GraduationCap },
+  //   { key: 'instructors', label: 'Instructor Management', icon: Users },
+  //   { key: 'programs', label: 'Program Management', icon: BookOpen },
+  //   { key: 'sessions', label: 'Academic Sessions', icon: CalendarDays },
+  //   { key: 'results', label: 'Results Management', icon: FileText },
+  //   { key: 'history', label: 'Result History', icon: History },
+  //   { key: 'reports', label: 'Reports', icon: BarChart3 }, 
+  //   { key: 'passmarks', label: 'Course Grading', icon: Award }, 
+  // ],
   instructor: [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'myclasses', label: 'My Classes', icon: BookOpen },

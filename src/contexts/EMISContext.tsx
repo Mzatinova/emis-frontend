@@ -37,6 +37,7 @@ export interface Course {
   level?: number;
   credits: number;
   instructorId: string | null;
+   pass_mark?: number; 
 }
 
 export interface Result {

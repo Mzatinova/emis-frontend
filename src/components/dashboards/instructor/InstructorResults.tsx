@@ -26,10 +26,24 @@ const InstructorResults: React.FC<InstructorResultsProps> = ({ toast, setToast, 
     const [savedResults, setSavedResults] = useState<{ [key: string]: boolean }>({});
 
     // Get pass mark for a course
+    // const getPassMark = (courseName: string) => {
+    //     if (courseName === 'Practical') return 75;
+    //     return 50;
+    // };
+
     const getPassMark = (courseName: string) => {
-        if (courseName === 'Practical') return 75;
-        return 50;
-    };
+    // Try to get from database
+    const course = courses.find(c => c.name === courseName);
+    if (course?.pass_mark) {
+        return course.pass_mark;
+    }
+    
+    // Hardcoded fallbacks (YOUR ORIGINAL CODE)
+    if (courseName === 'Practical') {
+        return 75;
+    }
+    return 50;
+};
 
     // Get grade and pass/fail
 

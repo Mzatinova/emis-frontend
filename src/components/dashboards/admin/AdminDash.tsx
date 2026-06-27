@@ -7,6 +7,8 @@ import SessionManagement from './SessionManagement';
 import AdminDashboard from './AdminDashboard';
 import ResultHistory from './ResultHistory';
 import AdminReports from './AdminReports';
+import PassMarkManagement from './PassMarkManagement';
+import ResultsDashboard from './ResultsDashboard';
 
 const AdminDash: React.FC<{ active: string }> = ({ active }) => {
   const [toast, setToast] = useState('');
@@ -27,19 +29,27 @@ const AdminDash: React.FC<{ active: string }> = ({ active }) => {
     return <SessionManagement toast={toast} setToast={setToast} />;
   }
 
-  if (active === 'results') {
-    return <ResultsManagement toast={toast} setToast={setToast} />;
+   if (active === 'results') {  // ← KEEP THIS
+    return <ResultsDashboard toast={toast} setToast={setToast} />;
   }
+
+  // if (active === 'results') {
+  //   return <ResultsManagement toast={toast} setToast={setToast} />;
+  // }
 
   if (active === 'programs') {
     return <ProgramManagement toast={toast} setToast={setToast} />;
   }
-   if (active === 'history') {
-    return <ResultHistory toast={toast} setToast={setToast} />;
-  }
+  //  if (active === 'history') {
+  //   return <ResultHistory toast={toast} setToast={setToast} />;
+  // }
   if (active === 'reports') {
     return <AdminReports toast={toast} setToast={setToast} />;
 }
+
+// if (active === 'passmarks') {  // ← ADD THIS
+//     return <PassMarkManagement toast={toast} setToast={setToast} />;
+//   }
 
   return null;
 };
