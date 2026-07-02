@@ -103,8 +103,8 @@ interface EMISState {
 
 const EMISContext = createContext<EMISState | undefined>(undefined);
 
-// const API_BASE = 'http://localhost:8000/api';
-const API_BASE = 'https://emis-backend.onrender.com/api';
+const API_BASE = 'http://localhost:8000/api';
+// const API_BASE = 'https://emis-backend.onrender.com/api';
 
 const getToken = () => localStorage.getItem('api_token');
 
